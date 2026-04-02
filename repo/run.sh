@@ -2,10 +2,12 @@
 set -e
 
 # NexusCare — Appointment & Billing Management System
-# One-command startup
+# One-command startup — works from any directory
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Starting NexusCare..."
-docker compose up -d --build
+docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d --build
 
 echo ""
 echo "Waiting for services to be ready..."
