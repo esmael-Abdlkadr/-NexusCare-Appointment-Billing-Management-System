@@ -1,0 +1,42 @@
+# Dependencies
+repo/frontend/node_modules/
+repo/e2e/node_modules/
+repo/backend/vendor/
+
+# Build artifacts
+repo/frontend/dist/
+repo/frontend/.vite/
+
+# Environment files
+repo/backend/.env
+repo/.env
+
+# PHP / Laravel
+repo/backend/storage/logs/
+repo/backend/storage/framework/cache/
+repo/backend/storage/framework/sessions/
+repo/backend/storage/framework/views/
+repo/backend/bootstrap/cache/
+*.log
+
+# Python / pytest
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes / DB
+*.db
+mysql_data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Test reports
+repo/.tmp/
