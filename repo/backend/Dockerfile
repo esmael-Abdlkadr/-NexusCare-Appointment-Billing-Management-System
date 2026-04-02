@@ -42,8 +42,8 @@ RUN mkdir -p /var/www/bootstrap/cache \
              /var/www/storage/framework/testing \
              /var/www/storage/logs
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Install dependencies (including dev for testing)
+RUN composer install --optimize-autoloader
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
