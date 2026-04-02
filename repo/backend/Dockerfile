@@ -34,9 +34,13 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY entrypoint.sh /entrypoint.sh
 
 # Ensure required directories exist before composer runs artisan package:discover
-RUN mkdir -p /var/www/bootstrap/cache /var/www/storage/framework/cache \
-             /var/www/storage/framework/sessions /var/www/storage/framework/views \
-             /var/www/storage/framework/testing /var/www/storage/logs /var/www/storage/app
+RUN mkdir -p /var/www/bootstrap/cache \
+             /var/www/storage/app/public \
+             /var/www/storage/framework/cache/data \
+             /var/www/storage/framework/sessions \
+             /var/www/storage/framework/views \
+             /var/www/storage/framework/testing \
+             /var/www/storage/logs
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader
