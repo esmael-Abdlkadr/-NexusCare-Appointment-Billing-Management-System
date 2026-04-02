@@ -18,20 +18,20 @@
         </include>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="APP_KEY" value="base64:hXJo1VM8mGXiQI9L1Gy/SO/YR/42un6EOh68Th6Ytk0="/>
-        <env name="JWT_SECRET" value="testing-jwt-secret-for-phpunit-only"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_KEY" value="base64:hXJo1VM8mGXiQI9L1Gy/SO/YR/42un6EOh68Th6Ytk0=" force="true"/>
+        <env name="JWT_SECRET" value="testing-jwt-secret-for-phpunit-32chars" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
-        <env name="CACHE_DRIVER" value="array"/>
-        <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="testing"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="CACHE_DRIVER" value="array" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="DB_CONNECTION" value="testing" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

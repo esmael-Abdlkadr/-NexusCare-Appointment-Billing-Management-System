@@ -11,7 +11,28 @@ if [ -z "$JWT_SECRET" ]; then
   export JWT_SECRET=$(php artisan jwt:secret --show --no-interaction 2>/dev/null | tail -1 || openssl rand -base64 32)
 fi
 
-# Write them into Laravel's .env so artisan commands work
+# Write runtime .env file so artisan commands and tests work
+cat > /var/www/.env <<EOF
+APP_NAME=NexusCare
+APP_ENV=${APP_ENV:-production}
+APP_KEY=${APP_KEY}
+APP_DEBUG=${APP_DEBUG:-false}
+APP_URL=${APP_URL:-http://localhost:8000}
+
+DB_CONNECTION=mysql
+DB_HOST=${DB_HOST:-mysql}
+DB_PORT=${DB_PORT:-3306}
+DB_DATABASE=${DB_DATABASE:-nexuscare}
+DB_USERNAME=${DB_USERNAME:-nexuscare}
+DB_PASSWORD=${DB_PASSWORD:-nexuscare_secret}
+
+JWT_SECRET=${JWT_SECRET}
+JWT_TTL=${JWT_TTL:-720}
+JWT_ALGO=HS256
+
+FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+EOF
+
 php artisan config:clear
 
 # Run migrations automatically — idempotent, safe on every container restart

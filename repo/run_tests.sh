@@ -11,7 +11,11 @@ echo "============================================"
 echo ""
 
 echo "=== 1. Backend Unit + Feature Tests ==="
-docker compose exec -T backend php artisan test --stop-on-failure
+# Set APP_KEY and JWT_SECRET explicitly for test environment
+docker compose exec -T \
+    -e APP_KEY="base64:hXJo1VM8mGXiQI9L1Gy/SO/YR/42un6EOh68Th6Ytk0=" \
+    -e JWT_SECRET="testing-jwt-secret-for-phpunit-32chars" \
+    backend php artisan test --stop-on-failure
 echo "Backend tests: PASSED"
 echo ""
 
