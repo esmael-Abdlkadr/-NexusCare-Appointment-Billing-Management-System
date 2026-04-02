@@ -184,6 +184,71 @@ class AppointmentTest extends TestCase
         $this->assertContains($response->status(), [403, 404]);
     }
 
+    public function test_reschedule_requires_reason(): void
+    {
+        $token = $this->token('staff001');
+        $appt = $this->createRequestedAppointment();
+
+        // Reschedule without reason should fail
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/appointments/'.$appt->id, [
+                'start_time' => now()->addDays(2)->setHour(15)->toIso8601String(),
+                'end_time' => now()->addDays(2)->setHour(15)->addMinutes(30)->toIso8601String(),
+            ])
+            ->assertStatus(422);
+    }
+
+    public function test_reschedule_stores_reason(): void
+    {
+        $token = $this->token('staff001');
+        $appt = $this->createRequestedAppointment();
+        $reason = 'Client requested a different time due to travel';
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/appointments/'.$appt->id, [
+                'start_time' => now()->addDays(2)->setHour(15)->toIso8601String(),
+                'end_time' => now()->addDays(2)->setHour(15)->addMinutes(30)->toIso8601String(),
+                'reason' => $reason,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('appointments', [
+            'id' => $appt->id,
+            'reschedule_reason' => $reason,
+        ]);
+    }
+
+    public function test_reschedule_reason_in_audit_log(): void
+    {
+        $token = $this->token('staff001');
+        $appt = $this->createRequestedAppointment();
+        $reason = 'Provider not available on the originally scheduled date';
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/appointments/'.$appt->id, [
+                'start_time' => now()->addDays(3)->setHour(10)->toIso8601String(),
+                'end_time' => now()->addDays(3)->setHour(10)->addMinutes(30)->toIso8601String(),
+                'reason' => $reason,
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'target_type' => Appointment::class,
+            'target_id' => $appt->id,
+            'action' => 'RESCHEDULE_APPOINTMENT',
+        ]);
+
+        $auditLog = \App\Models\AuditLog::query()
+            ->where('target_type', Appointment::class)
+            ->where('target_id', $appt->id)
+            ->where('action', 'RESCHEDULE_APPOINTMENT')
+            ->first();
+
+        $this->assertNotNull($auditLog);
+        $payload = is_array($auditLog->payload) ? $auditLog->payload : json_decode((string) $auditLog->payload, true);
+        $this->assertSame($reason, $payload['reschedule_reason'] ?? null);
+    }
+
     private function token(string $identifier): string
     {
         User::query()->where('identifier', $identifier)->update([

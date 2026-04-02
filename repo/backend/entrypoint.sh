@@ -1,14 +1,25 @@
 #!/bin/bash
 set -e
 
-# Generate APP_KEY if not already set or is the default placeholder
+# Generate APP_KEY if not already set or is the default placeholder.
+# Use a PHP fallback so key generation never silently results in empty value.
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:CHANGEME" ]; then
-  export APP_KEY=$(php artisan key:generate --show --no-interaction 2>/dev/null | tail -1)
+  GENERATED_APP_KEY="$(php artisan key:generate --show --no-interaction 2>/dev/null || true)"
+  GENERATED_APP_KEY="$(echo "$GENERATED_APP_KEY" | tr -d '\r' | sed -n '$p')"
+  if [ -z "$GENERATED_APP_KEY" ]; then
+    GENERATED_APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
+  fi
+  export APP_KEY="$GENERATED_APP_KEY"
 fi
 
-# Generate JWT_SECRET if not set
+# Generate JWT_SECRET if not set.
 if [ -z "$JWT_SECRET" ]; then
-  export JWT_SECRET=$(php artisan jwt:secret --show --no-interaction 2>/dev/null | tail -1 || openssl rand -base64 32)
+  GENERATED_JWT_SECRET="$(php artisan jwt:secret --show --no-interaction 2>/dev/null || true)"
+  GENERATED_JWT_SECRET="$(echo "$GENERATED_JWT_SECRET" | tr -d '\r' | sed -n '$p')"
+  if [ -z "$GENERATED_JWT_SECRET" ]; then
+    GENERATED_JWT_SECRET="$(php -r 'echo bin2hex(random_bytes(32));')"
+  fi
+  export JWT_SECRET="$GENERATED_JWT_SECRET"
 fi
 
 # Write runtime .env file so artisan commands and tests work

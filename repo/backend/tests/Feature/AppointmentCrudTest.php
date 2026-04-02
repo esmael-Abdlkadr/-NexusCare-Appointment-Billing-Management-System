@@ -103,6 +103,7 @@ class AppointmentCrudTest extends TestCase
             ->putJson('/api/appointments/'.$this->appointmentId, [
                 'start_time' => $start,
                 'end_time' => $end,
+                'reason' => 'Staff rescheduled due to availability update',
             ])
             ->assertOk();
 
@@ -117,6 +118,7 @@ class AppointmentCrudTest extends TestCase
             ->putJson('/api/appointments/'.$this->appointmentId, [
                 'start_time' => now()->addDays(4)->toIso8601String(),
                 'end_time' => now()->addDays(4)->addHour()->toIso8601String(),
+                'reason' => 'Reviewer attempted schedule update',
             ])
             ->assertStatus(403);
     }
@@ -129,6 +131,7 @@ class AppointmentCrudTest extends TestCase
             ->putJson('/api/appointments/999999', [
                 'start_time' => now()->addDays(4)->toIso8601String(),
                 'end_time' => now()->addDays(4)->addHour()->toIso8601String(),
+                'reason' => 'Nonexistent appointment update attempt',
             ])
             ->assertStatus(404);
     }
@@ -244,6 +247,7 @@ class AppointmentCrudTest extends TestCase
             ->putJson('/api/appointments/'.$appointmentA->id, [
                 'start_time' => $appointmentB->start_time->copy()->addMinutes(5)->toIso8601String(),
                 'end_time' => $appointmentB->end_time->copy()->addMinutes(5)->toIso8601String(),
+                'reason' => 'Conflict scenario reschedule',
             ])
             ->assertStatus(409)
             ->assertJson(['error' => 'APPOINTMENT_CONFLICT']);
