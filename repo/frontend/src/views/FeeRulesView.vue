@@ -40,8 +40,8 @@
     </el-card>
 
     <el-dialog v-model="dialogVisible" title="Fee Rule" width="520px">
-      <el-form label-position="top" :model="form">
-        <el-form-item label="Fee Type">
+      <el-form ref="formRef" label-position="top" :model="form" :rules="formRules">
+        <el-form-item label="Fee Type" prop="fee_type">
           <el-select v-model="form.fee_type" placeholder="Select fee type" class="w-full">
             <el-option label="No Show" value="no_show" />
             <el-option label="Overdue" value="overdue" />
@@ -49,7 +49,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="Amount">
+        <el-form-item label="Amount" prop="amount">
           <el-input-number v-model="form.amount" :min="0" :precision="2" :step="1" class="w-full" />
         </el-form-item>
 
@@ -98,6 +98,16 @@ const form = reactive({
   period_days: null,
   grace_minutes: null
 })
+
+const formRef = ref(null)
+
+const formRules = {
+  fee_type: [{ required: true, message: 'Fee type is required.', trigger: 'change' }],
+  amount: [
+    { required: true, message: 'Amount is required.', trigger: 'blur' },
+    { type: 'number', min: 0.01, message: 'Amount must be greater than 0.', trigger: 'blur' }
+  ]
+}
 
 const resetForm = () => {
   form.fee_type = ''
@@ -157,6 +167,11 @@ const openEdit = row => {
 }
 
 const submit = async () => {
+  if (submitting.value) return
+
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
+
   submitting.value = true
   try {
     const payload = {

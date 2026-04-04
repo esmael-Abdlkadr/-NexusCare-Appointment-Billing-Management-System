@@ -89,16 +89,21 @@ npx playwright test
 | Feature                  | Staff | Reviewer | Administrator |
 |--------------------------|-------|----------|---------------|
 | Create/reschedule appointments | ✅ | ❌ | ✅ |
-| Confirm appointments     | ❌    | ✅       | ✅            |
-| View waitlist            | ✅    | ✅       | ✅            |
-| Post payments            | ✅    | ✅       | ✅            |
+| Confirm appointments     | ✅    | ❌       | ✅            |
+| View waitlist            | ✅    | ❌       | ✅            |
+| Manage waitlist (add/remove/backfill) | ✅ | ❌ | ✅ |
+| Post payments            | ✅    | ❌       | ✅            |
 | Approve waivers          | ❌    | ✅       | ✅            |
 | Import reconciliation CSV| ❌    | ✅       | ✅            |
 | Resolve exceptions       | ❌    | ✅       | ✅            |
+| Acknowledge anomalies    | ❌    | ✅       | ✅            |
 | User management          | ❌    | ❌       | ✅            |
+| Account moderation (ban/mute) | ❌ | ❌    | ✅            |
 | Recycle bin              | ❌    | ❌       | ✅            |
 | Export reports           | ❌    | ✅       | ✅            |
 | View audit logs          | ❌    | ✅       | ✅            |
+| Fee rule management      | ❌    | ❌       | ✅            |
+| View ledger              | ❌    | ❌       | ✅            |
 
 ---
 
@@ -117,10 +122,16 @@ npx playwright test
 ## Run Tests
 
 ```bash
+# Strict mode (default): fails if E2E dependencies are not installed
 bash run_tests.sh
+
+# Non-strict mode: backend tests pass even if E2E is skipped
+bash run_tests.sh --allow-skip-e2e
 ```
 
-Or individually:
+`run_tests.sh` runs backend unit+feature tests (via Docker) and then Playwright E2E tests. In strict mode (default), a skipped E2E suite causes a non-zero exit and prints a clear `PARTIAL RUN` message. Use `--allow-skip-e2e` only in CI environments where E2E dependencies cannot be installed.
+
+Or run backend tests individually:
 
 ```bash
 # Unit tests

@@ -25,9 +25,23 @@ class AdminUserController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
+        // Keep admin operations tenant-scoped: site admins cannot reset
+        // credentials for users in another site.
+        if ((int) $actor->site_id !== (int) $user->site_id) {
+            return response()->json([
+                'success' => false,
+                'error' => 'NOT_FOUND',
+                'data' => [],
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $validated = $request->validate([
-            'new_password' => ['required', 'string', new PasswordComplexityRule()],
-            'verification_note' => ['required', 'string', 'min:10'],
+            'new_password'        => ['required', 'string', new PasswordComplexityRule()],
+            'verification_method' => ['required', 'string', 'in:in_person,phone,document'],
+            'verified_attributes' => ['required', 'array', 'min:1'],
+            'verified_attributes.*' => ['required', 'string', 'max:100'],
+            'verifier_role'       => ['required', 'string', 'max:100'],
+            'verification_result' => ['required', 'string', 'in:passed'],
         ]);
 
         $user->forceFill([
@@ -39,7 +53,12 @@ class AdminUserController extends Controller
             'PASSWORD_RESET',
             User::class,
             $user->id,
-            ['verification_note' => $validated['verification_note']],
+            [
+                'verification_method'  => $validated['verification_method'],
+                'verified_attributes'  => $validated['verified_attributes'],
+                'verifier_role'        => $validated['verifier_role'],
+                'verification_result'  => $validated['verification_result'],
+            ],
             $request->ip(),
         );
 

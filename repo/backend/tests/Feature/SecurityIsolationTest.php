@@ -724,6 +724,155 @@ class SecurityIsolationTest extends TestCase
         $this->assertNotContains($anomaly->id, $ids);
     }
 
+    public function test_admin_cannot_view_user_from_different_site(): void
+    {
+        Site::withoutGlobalScopes()->firstOrCreate(['id' => 2], [
+            'organization_id' => 1,
+            'name' => 'Site 2',
+        ]);
+
+        Department::withoutGlobalScopes()->firstOrCreate(['id' => 2], [
+            'site_id' => 2,
+            'name' => 'Dept 2',
+        ]);
+
+        // Create a site 1 admin
+        User::withoutGlobalScopes()->updateOrCreate(
+            ['identifier' => 'admin_site1_scope_test'],
+            [
+                'password_hash' => Hash::make('Admin@12345678', ['rounds' => 12]),
+                'role' => 'administrator',
+                'site_id' => 1,
+                'department_id' => 1,
+                'is_banned' => false,
+                'failed_attempts' => 0,
+            ]
+        );
+
+        // Create a site 2 user
+        $site2User = User::withoutGlobalScopes()->updateOrCreate(
+            ['identifier' => 'staff_site2_scope_test'],
+            [
+                'password_hash' => Hash::make('Admin@12345678', ['rounds' => 12]),
+                'role' => 'staff',
+                'site_id' => 2,
+                'department_id' => 2,
+                'is_banned' => false,
+                'failed_attempts' => 0,
+            ]
+        );
+
+        $token = $this->loginAs('admin_site1_scope_test');
+
+        // Admin from site 1 should NOT be able to view user from site 2
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/admin/users/'.$site2User->id)
+            ->assertStatus(404);
+    }
+
+    public function test_admin_cannot_update_user_from_different_site(): void
+    {
+        Site::withoutGlobalScopes()->firstOrCreate(['id' => 2], [
+            'organization_id' => 1,
+            'name' => 'Site 2',
+        ]);
+
+        Department::withoutGlobalScopes()->firstOrCreate(['id' => 2], [
+            'site_id' => 2,
+            'name' => 'Dept 2',
+        ]);
+
+        // Create a site 1 admin
+        User::withoutGlobalScopes()->updateOrCreate(
+            ['identifier' => 'admin_site1_update_test'],
+            [
+                'password_hash' => Hash::make('Admin@12345678', ['rounds' => 12]),
+                'role' => 'administrator',
+                'site_id' => 1,
+                'department_id' => 1,
+                'is_banned' => false,
+                'failed_attempts' => 0,
+            ]
+        );
+
+        // Create a site 2 user
+        $site2User = User::withoutGlobalScopes()->updateOrCreate(
+            ['identifier' => 'staff_site2_update_test'],
+            [
+                'password_hash' => Hash::make('Admin@12345678', ['rounds' => 12]),
+                'role' => 'staff',
+                'site_id' => 2,
+                'department_id' => 2,
+                'is_banned' => false,
+                'failed_attempts' => 0,
+            ]
+        );
+
+        $token = $this->loginAs('admin_site1_update_test');
+
+        // Admin from site 1 should NOT be able to update (ban) user from site 2
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/admin/users/'.$site2User->id, ['is_banned' => true])
+            ->assertStatus(404);
+
+        // Verify the user wasn't actually banned
+        $site2User->refresh();
+        $this->assertFalse($site2User->is_banned);
+    }
+
+    public function test_admin_list_only_shows_same_site_users(): void
+    {
+        Site::withoutGlobalScopes()->firstOrCreate(['id' => 2], [
+            'organization_id' => 1,
+            'name' => 'Site 2',
+        ]);
+
+        Department::withoutGlobalScopes()->firstOrCreate(['id' => 2], [
+            'site_id' => 2,
+            'name' => 'Dept 2',
+        ]);
+
+        // Create a site 1 admin
+        User::withoutGlobalScopes()->updateOrCreate(
+            ['identifier' => 'admin_site1_list_test'],
+            [
+                'password_hash' => Hash::make('Admin@12345678', ['rounds' => 12]),
+                'role' => 'administrator',
+                'site_id' => 1,
+                'department_id' => 1,
+                'is_banned' => false,
+                'failed_attempts' => 0,
+            ]
+        );
+
+        // Create a site 2 user with a unique identifier
+        User::withoutGlobalScopes()->updateOrCreate(
+            ['identifier' => 'staff_site2_list_test_unique'],
+            [
+                'password_hash' => Hash::make('Admin@12345678', ['rounds' => 12]),
+                'role' => 'staff',
+                'site_id' => 2,
+                'department_id' => 2,
+                'is_banned' => false,
+                'failed_attempts' => 0,
+            ]
+        );
+
+        $token = $this->loginAs('admin_site1_list_test');
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/admin/users?per_page=100')
+            ->assertOk();
+
+        $identifiers = collect($response->json('data.data', []))->pluck('identifier')->all();
+
+        // Site 2 user should NOT appear in the list
+        $this->assertNotContains('staff_site2_list_test_unique', $identifiers);
+
+        // Site 1 users should appear
+        $this->assertContains('admin_site1_list_test', $identifiers);
+    }
+
     private function token(string $identifier): string
     {
         User::withoutGlobalScopes()->where('identifier', $identifier)->update([

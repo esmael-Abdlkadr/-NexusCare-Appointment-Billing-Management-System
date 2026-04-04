@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
+import type { APIRequestContext, Page } from '@playwright/test'
 import { apiGet, apiPost, apiToken } from '../helpers/api'
 import { loginAsReviewer, loginAsStaff, logout } from '../helpers/auth'
 
-const seedConfirmedAppointment = async (request, dayOffset, serviceType) => {
+const seedConfirmedAppointment = async (request: APIRequestContext, dayOffset: number, serviceType: string) => {
   const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
   const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
 
@@ -103,7 +104,9 @@ test.beforeEach(async ({ page }) => {
 test('appointments list page loads and shows table', async ({ page }) => {
   await page.goto('/appointments')
   await expect(page.locator('.el-table')).toBeVisible()
-  await expect(page.locator('.el-table__body, .el-table__empty-block').first()).toBeVisible()
+  await expect(
+    page.locator('.el-table__body-wrapper:visible .el-table__body, .el-table__empty-block:visible').first()
+  ).toBeVisible()
 })
 
 test('create appointment form opens and can attempt submit', async ({ page }) => {
@@ -120,7 +123,75 @@ test('create appointment form opens and can attempt submit', async ({ page }) =>
   await expect(page.getByRole('button', { name: /create appointment/i })).toBeVisible()
 })
 
-const filterByConfirmed = async (page) => {
+const chooseFirstSelectOption = async (page: Page, labelText: string) => {
+  const field = page.locator('.el-form-item').filter({ hasText: labelText }).first()
+  const selectTrigger = field.locator('.el-select')
+  await selectTrigger.click({ force: true })
+
+  const dropdown = page.locator('.el-select-dropdown:visible .el-select-dropdown__item').first()
+  await dropdown.waitFor({ state: 'visible', timeout: 5000 })
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('Enter')
+  await page.waitForTimeout(300)
+
+  const inputValue = selectTrigger.locator('.el-input__inner, .el-select__selected-item, .el-select__placeholder')
+  await expect(inputValue.first()).not.toHaveText(/search|select/i, { timeout: 3000 }).catch(() => {})
+}
+
+test('create appointment form submits successfully and persists the new appointment', async ({ page, request }) => {
+  const serviceType = `E2E-UI-CREATE-${Date.now()}`
+  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
+
+  await page.goto('/appointments/create')
+  await expect(page.getByRole('heading', { name: 'Create Appointment' })).toBeVisible({ timeout: 10000 })
+
+  await chooseFirstSelectOption(page, 'Client')
+  await page.locator('input[placeholder="Enter service type"]').fill(serviceType)
+  await chooseFirstSelectOption(page, 'Provider')
+  await chooseFirstSelectOption(page, 'Resource')
+
+  const uniqueDay = 20 + (Date.now() % 5)
+  const startHour = 8 + (Date.now() % 6)
+  await page.locator('input[placeholder="Select start time"]').fill(`2028-07-${uniqueDay} ${startHour}:00:00`)
+  await page.locator('input[placeholder="Select end time"]').fill(`2028-07-${uniqueDay} ${startHour + 1}:00:00`)
+
+  const submitAndResolveConflicts = async (maxRetries = 3) => {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      await page.getByRole('button', { name: /create appointment/i }).click()
+      await page.waitForTimeout(1000)
+
+      const conflictAlert = page.locator('.conflict-alert')
+      if (await conflictAlert.isVisible().catch(() => false)) {
+        const suggestedSlot = conflictAlert.locator('.el-button').first()
+        if (await suggestedSlot.isVisible().catch(() => false)) {
+          await suggestedSlot.click({ force: true })
+          await page.waitForTimeout(500)
+          continue
+        }
+      }
+
+      const currentUrl = page.url()
+      if (currentUrl.includes('/appointments') && !currentUrl.includes('/create')) {
+        return true
+      }
+    }
+    return false
+  }
+
+  const submitted = await submitAndResolveConflicts()
+
+  if (!submitted) {
+    await page.waitForURL(url => url.pathname === '/appointments', { timeout: 15000 })
+  }
+
+  await expect.poll(async () => {
+    const data = await apiGet(request, staffToken, '/appointments', { status: 'requested', per_page: 100 })
+    const rows = data?.data?.data ?? []
+    return rows.some((row: { service_type?: string }) => row.service_type === serviceType)
+  }, { timeout: 10000 }).toBe(true)
+})
+
+const filterByConfirmed = async (page: Page) => {
   const statusFilter = page.locator('.status-filter')
   await statusFilter.click()
   const option = page.locator('.el-select-dropdown__item').filter({ hasText: 'confirmed' }).first()
@@ -169,16 +240,25 @@ test('reviewer creating appointment gets rejected by backend', async ({ page }) 
   await logout(page)
   await loginAsReviewer(page)
   await page.goto('/appointments/create')
-  // If the form renders, attempt submit — backend will reject with 403
+  await page.waitForLoadState('networkidle')
+  const isForbiddenRoute = page.url().includes('/forbidden')
+  const forbiddenMessage = page.getByText('Access Denied')
+  const goBackButton = page.getByRole('button', { name: /go back/i })
   const submitBtn = page.getByRole('button', { name: /create appointment/i })
-  if (await submitBtn.count()) {
-    await submitBtn.click()
-    // Expect an error message (validation or 403 from backend)
-    await expect(page.locator('.el-message, .el-alert')).toBeVisible({ timeout: 8000 })
-  } else {
-    // Page redirected or form not shown — also acceptable
-    await expect(page.locator('body')).toBeVisible()
+
+  if (isForbiddenRoute || await forbiddenMessage.isVisible().catch(() => false) || await goBackButton.isVisible().catch(() => false)) {
+    await expect(page).toHaveURL(/\/forbidden|\/appointments\/create/, { timeout: 8000 })
+    if (await forbiddenMessage.isVisible().catch(() => false)) {
+      await expect(forbiddenMessage).toBeVisible({ timeout: 8000 })
+    } else {
+      await expect(goBackButton).toBeVisible({ timeout: 8000 })
+    }
+    return
   }
+
+  await expect(submitBtn).toBeVisible({ timeout: 5000 })
+  await submitBtn.click()
+  await expect(page.locator('.el-message, .el-alert').filter({ hasText: /forbidden|denied|not authorized|403/i }).first()).toBeVisible({ timeout: 8000 })
 })
 
 test('appointments list pagination: next page button works', async ({ page, request }) => {

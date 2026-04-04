@@ -143,9 +143,18 @@ describe('submit — save rule', () => {
     await addBtn.trigger('click')
     await nextTick()
 
+    // Fill in required form fields
+    wrapper.vm.form.fee_type = 'no_show'
+    wrapper.vm.form.amount = 25
+    await nextTick()
+
+    // Mock the form ref validation to pass
+    wrapper.vm.formRef = { validate: () => Promise.resolve(true) }
+
     // Click Save Rule button
     const saveBtn = wrapper.findAll('button').find(b => /save rule/i.test(b.text()))
     await saveBtn.trigger('click')
+    await nextTick()
     await nextTick()
 
     expect(mockSaveFeeRule).toHaveBeenCalledTimes(1)
@@ -164,8 +173,17 @@ describe('submit — save rule', () => {
     await addBtn.trigger('click')
     await nextTick()
 
+    // Fill in required form fields
+    wrapper.vm.form.fee_type = 'overdue'
+    wrapper.vm.form.amount = 10
+    await nextTick()
+
+    // Mock the form ref validation to pass
+    wrapper.vm.formRef = { validate: () => Promise.resolve(true) }
+
     const saveBtn = wrapper.findAll('button').find(b => /save rule/i.test(b.text()))
     await saveBtn.trigger('click')
+    await nextTick()
     await nextTick()
     await nextTick()
 

@@ -12,7 +12,7 @@ const routeMetaByName = {
   ReconciliationExceptions: { roles: ['reviewer', 'administrator'] },
   AnomalyAlerts: { roles: ['reviewer', 'administrator'] },
   UserManagement: { roles: ['administrator'] },
-  ContentModeration: { roles: ['administrator'] },
+  AccountModeration: { roles: ['administrator'] },
   RecycleView: { roles: ['administrator'] },
   AuditLogs: { roles: ['reviewer', 'administrator'] },
   ReportsView: { roles: ['reviewer', 'administrator'] }
@@ -46,7 +46,7 @@ describe('useNavSections', () => {
     const adminLabels = labels(getVisibleNavSections('administrator', routeMetaByName))
     expect(adminLabels).toContain('Ledger')
     expect(adminLabels).toContain('User Management')
-    expect(adminLabels).toContain('Content Moderation')
+    expect(adminLabels).toContain('Account Moderation')
     expect(adminLabels).toContain('Recycle Bin')
     expect(adminLabels).toContain('Audit Logs')
     expect(adminLabels).toContain('Reports')

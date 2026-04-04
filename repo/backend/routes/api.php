@@ -51,6 +51,7 @@ Route::middleware(['app.jwt', 'scope.check', 'check.muted', 'audit.logger'])->gr
     });
 
     Route::post('/admin/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])
+        ->middleware('role:administrator')
         ->name('admin.users.reset-password');
 
     Route::prefix('admin')->group(function () {

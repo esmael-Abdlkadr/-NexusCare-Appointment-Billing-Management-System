@@ -29,6 +29,7 @@ class Appointment extends Model
         'end_time',
         'status',
         'cancel_reason',
+        'reschedule_reason',
         'assessed_no_show',
         'site_id',
         'department_id',

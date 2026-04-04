@@ -96,9 +96,9 @@ const router = createRouter({
         },
         {
           path: 'admin/moderation',
-          name: 'ContentModeration',
+          name: 'AccountModeration',
           component: () => import('@/views/ContentModeration.vue'),
-          meta: { title: 'Content Moderation', roles: ['administrator'] }
+          meta: { title: 'Account Moderation', roles: ['administrator'] }
         },
         {
           path: 'admin/recycle',

@@ -96,7 +96,7 @@ const handleLogin = async () => {
   }
 
   if (!validateIdentifier(form.value.identifier)) {
-    errorMessage.value = 'Identifier must be 3–100 characters and start with a letter or number.'
+    errorMessage.value = 'Enter a valid employee ID, student ID, or email-style username (3–100 characters).'
     return
   }
 

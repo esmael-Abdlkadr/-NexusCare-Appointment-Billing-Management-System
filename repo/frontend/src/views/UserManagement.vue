@@ -2,6 +2,10 @@
   <div class="page">
     <div class="toolbar">
       <h2>User Management</h2>
+      <div class="scope-badges">
+        <el-tag size="small" type="info">Site #{{ scope.siteId }}</el-tag>
+        <el-tag size="small" type="info">Dept #{{ scope.departmentId }}</el-tag>
+      </div>
     </div>
     <el-card v-loading="loading">
       <div style="display:flex; align-items:center; margin-bottom:12px">
@@ -106,6 +110,7 @@
 <script setup>
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import UserCreateDialog from '@/components/UserCreateDialog.vue'
 import UserResetPasswordDialog from '@/components/UserResetPasswordDialog.vue'
 import {
@@ -118,6 +123,11 @@ import {
 import { extractError } from '../utils/apiError.js'
 
 const rows = ref([])
+const authStore = useAuthStore()
+const scope = ref({
+  siteId: authStore.user?.site_id || 1,
+  departmentId: authStore.user?.department_id || 1
+})
 const loading = ref(false)
 const filterIdentifier = ref('')
 const filterRole = ref('')
@@ -150,7 +160,9 @@ const load = async (targetPage = page.value) => {
       identifier: filterIdentifier.value || undefined,
       role: filterRole.value || undefined,
       page: page.value,
-      per_page: perPage.value
+      per_page: perPage.value,
+      site_id: scope.value.siteId,
+      department_id: scope.value.departmentId
     }
     const data = await listAdminUsers(params)
     rows.value = data?.data?.data || []
@@ -341,6 +353,7 @@ onMounted(() => load(1))
 <style scoped>
 .page { margin: 24px auto; max-width: 1200px; padding: 0 12px; }
 .toolbar { margin-bottom: 16px; }
+.scope-badges { display: flex; gap: 6px; margin-top: 8px; }
 .bulk-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .bulk-count { font-size: 13px; color: #6b7280; }
 </style>

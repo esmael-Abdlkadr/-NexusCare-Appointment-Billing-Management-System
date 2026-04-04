@@ -30,7 +30,7 @@ export const NAV_SECTIONS = [
     items: [
       { label: 'Fee Rules', index: '/fee-rules', routeName: 'FeeRules', icon: 'Setting', route: '/fee-rules', roles: ['administrator'] },
       { label: 'User Management', index: '/admin/users', routeName: 'UserManagement' },
-      { label: 'Content Moderation', index: '/admin/moderation', routeName: 'ContentModeration' },
+      { label: 'Account Moderation', index: '/admin/moderation', routeName: 'AccountModeration' },
       { label: 'Recycle Bin', index: '/admin/recycle', routeName: 'RecycleView' }
     ]
   },

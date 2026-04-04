@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\Department;
+use App\Models\Resource;
 use App\Models\User;
 use App\Repositories\AppointmentRepository;
 use App\Repositories\AppointmentVersionRepository;
@@ -46,6 +48,36 @@ class AppointmentService
         $providerId = (int) $data['provider_id'];
         $resourceId = (int) $data['resource_id'];
 
+        // Defensive site-scope invariants: block cross-site mismatch even if
+        // controller validation is bypassed (e.g., via direct service call).
+        if (! User::withoutGlobalScopes()->where('id', $providerId)->where('site_id', $siteId)->exists()) {
+            return [
+                'success' => false,
+                'error' => 'CROSS_SITE_MISMATCH',
+                'data' => ['field' => 'provider_id'],
+                'status' => 422,
+            ];
+        }
+
+        if (! Resource::withoutGlobalScopes()->where('id', $resourceId)->where('site_id', $siteId)->exists()) {
+            return [
+                'success' => false,
+                'error' => 'CROSS_SITE_MISMATCH',
+                'data' => ['field' => 'resource_id'],
+                'status' => 422,
+            ];
+        }
+
+        $departmentId = (int) $data['department_id'];
+        if (! Department::withoutGlobalScopes()->where('id', $departmentId)->where('site_id', $siteId)->exists()) {
+            return [
+                'success' => false,
+                'error' => 'CROSS_SITE_MISMATCH',
+                'data' => ['field' => 'department_id'],
+                'status' => 422,
+            ];
+        }
+
         $conflicts = $this->appointmentRepository->overlappingConflicts(
             $providerId,
             $resourceId,
@@ -78,7 +110,7 @@ class AppointmentService
             'end_time' => $end,
             'status' => Appointment::STATUS_REQUESTED,
             'site_id' => $siteId,
-            'department_id' => (int) $data['department_id'],
+            'department_id' => $departmentId,
         ]);
 
         $this->appointmentVersionRepository->createSnapshot($appointment, $actor->id);
@@ -105,7 +137,7 @@ class AppointmentService
         ];
     }
 
-    public function rescheduleAppointment(Appointment $appointment, array $data, User $actor): array
+    public function rescheduleAppointment(Appointment $appointment, array $data, User $actor, ?string $reason = null): array
     {
         $start = Carbon::parse($data['start_time']);
         $end = Carbon::parse($data['end_time']);
@@ -152,6 +184,7 @@ class AppointmentService
             'end_time' => $end,
             'provider_id' => $providerId,
             'resource_id' => $resourceId,
+            'reschedule_reason' => $reason,
         ]);
 
         $this->appointmentRepository->save($appointment);
@@ -165,6 +198,7 @@ class AppointmentService
             [
                 'start_time' => $appointment->start_time->toIso8601String(),
                 'end_time' => $appointment->end_time->toIso8601String(),
+                'reschedule_reason' => $reason,
             ],
             request()->ip(),
         );

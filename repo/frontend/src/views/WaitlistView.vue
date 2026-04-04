@@ -2,6 +2,10 @@
   <div class="page">
     <div class="toolbar">
       <h2>Waitlist</h2>
+      <div class="scope-badges">
+        <el-tag size="small" type="info">Site #{{ scope.siteId }}</el-tag>
+        <el-tag size="small" type="info">Dept #{{ scope.departmentId }}</el-tag>
+      </div>
       <el-button type="primary" @click="dialogVisible = true">Add Waitlist Entry</el-button>
     </div>
 
@@ -66,8 +70,8 @@
     </el-card>
 
     <el-dialog v-model="dialogVisible" title="Add Waitlist Entry" width="560px">
-      <el-form label-position="top" :model="addForm">
-        <el-form-item label="Client">
+      <el-form ref="addFormRef" label-position="top" :model="addForm" :rules="addFormRules">
+        <el-form-item label="Client" prop="client_id">
           <el-select
             v-model="addForm.client_id"
             filterable
@@ -82,28 +86,28 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="Service Type">
+        <el-form-item label="Service Type" prop="service_type">
           <el-input v-model="addForm.service_type" maxlength="100" />
         </el-form-item>
         <el-form-item label="Priority">
           <el-input-number v-model="addForm.priority" :min="1" :max="9999" />
         </el-form-item>
-        <el-form-item label="Preferred Start">
+        <el-form-item label="Preferred Start" prop="preferred_start">
           <el-date-picker v-model="addForm.preferred_start" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
         </el-form-item>
-        <el-form-item label="Preferred End">
+        <el-form-item label="Preferred End" prop="preferred_end">
           <el-date-picker v-model="addForm.preferred_end" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="addEntry">Add</el-button>
+        <el-button type="primary" :loading="addSubmitting" :disabled="addSubmitting" @click="addEntry">Add</el-button>
       </template>
     </el-dialog>
 
     <el-dialog v-model="confirmDialogVisible" title="Confirm Backfill" width="560px">
-      <el-form label-position="top" :model="confirmForm">
-        <el-form-item label="Provider">
+      <el-form ref="confirmFormRef" label-position="top" :model="confirmForm" :rules="confirmFormRules">
+        <el-form-item label="Provider" prop="provider_id">
           <el-select v-model="confirmForm.provider_id" filterable class="w-full" placeholder="Search provider">
             <el-option
               v-for="provider in providers"
@@ -113,7 +117,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="Resource">
+        <el-form-item label="Resource" prop="resource_id">
           <el-select v-model="confirmForm.resource_id" class="w-full" placeholder="Select room/resource">
             <el-option
               v-for="resource in resources"
@@ -126,16 +130,16 @@
         <el-form-item label="Department ID">
           <el-input-number v-model="confirmForm.department_id" :min="1" />
         </el-form-item>
-        <el-form-item label="Start Time">
+        <el-form-item label="Start Time" prop="start_time">
           <el-date-picker v-model="confirmForm.start_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
         </el-form-item>
-        <el-form-item label="End Time">
+        <el-form-item label="End Time" prop="end_time">
           <el-date-picker v-model="confirmForm.end_time" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="confirmDialogVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="confirmBackfill">Book Slot</el-button>
+        <el-button type="primary" :loading="confirmSubmitting" :disabled="confirmSubmitting" @click="confirmBackfill">Book Slot</el-button>
       </template>
     </el-dialog>
   </div>
@@ -150,6 +154,10 @@ import { searchUsers } from '@/services/userService'
 import { addWaitlistEntry, confirmBackfill as confirmBackfillService, listWaitlist, removeWaitlistEntry } from '@/services/waitlistService'
 
 const authStore = useAuthStore()
+const scope = computed(() => ({
+  siteId: authStore.user?.site_id || 1,
+  departmentId: authStore.user?.department_id || 1
+}))
 
 const rows = ref([])
 const loading = ref(false)
@@ -161,6 +169,10 @@ const selectedWaitlistId = ref(null)
 const clients = ref([])
 const providers = ref([])
 const resources = ref([])
+const addSubmitting = ref(false)
+const confirmSubmitting = ref(false)
+const addFormRef = ref(null)
+const confirmFormRef = ref(null)
 
 const addForm = reactive({
   client_id: null,
@@ -179,6 +191,20 @@ const confirmForm = reactive({
 })
 
 const proposedEntries = computed(() => rows.value.filter(item => item.status === 'proposed'))
+
+const addFormRules = {
+  client_id: [{ required: true, message: 'Client is required.', trigger: 'change' }],
+  service_type: [{ required: true, message: 'Service type is required.', trigger: 'blur' }],
+  preferred_start: [{ required: true, message: 'Preferred start time is required.', trigger: 'change' }],
+  preferred_end: [{ required: true, message: 'Preferred end time is required.', trigger: 'change' }]
+}
+
+const confirmFormRules = {
+  provider_id: [{ required: true, message: 'Provider is required.', trigger: 'change' }],
+  resource_id: [{ required: true, message: 'Resource is required.', trigger: 'change' }],
+  start_time: [{ required: true, message: 'Start time is required.', trigger: 'change' }],
+  end_time: [{ required: true, message: 'End time is required.', trigger: 'change' }]
+}
 
 const clientMap = computed(() => {
   return clients.value.reduce((acc, user) => {
@@ -202,7 +228,12 @@ const load = async (targetPage = page.value) => {
   page.value = targetPage
   loading.value = true
   try {
-    const data = await listWaitlist(page.value)
+    const data = await listWaitlist({
+      page: page.value,
+      per_page: 20,
+      site_id: scope.value.siteId,
+      department_id: scope.value.departmentId
+    })
     rows.value = data?.data?.data || []
     total.value = data?.data?.total || 0
   } catch (error) {
@@ -214,21 +245,31 @@ const load = async (targetPage = page.value) => {
 
 const loadUsersAndResources = async () => {
   try {
-    const data = await searchUsers()
+    const data = await searchUsers({
+      site_id: scope.value.siteId,
+      department_id: scope.value.departmentId
+    })
     clients.value = data?.data || []
   } catch (error) {
     clients.value = []
   }
 
   try {
-    const data = await searchUsers({ role: 'staff' })
+    const data = await searchUsers({
+      role: 'staff',
+      site_id: scope.value.siteId,
+      department_id: scope.value.departmentId
+    })
     providers.value = data?.data || []
   } catch (error) {
     providers.value = []
   }
 
   try {
-    const data = await listResources()
+    const data = await listResources({
+      site_id: scope.value.siteId,
+      department_id: scope.value.departmentId
+    })
     resources.value = data?.data || []
   } catch {
     ElMessage.error('Failed to load resources. Please try again.')
@@ -237,6 +278,17 @@ const loadUsersAndResources = async () => {
 }
 
 const addEntry = async () => {
+  if (addSubmitting.value) return
+
+  const valid = await addFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+
+  if (addForm.preferred_start && addForm.preferred_end && addForm.preferred_start >= addForm.preferred_end) {
+    ElMessage.error('Preferred end must be after preferred start.')
+    return
+  }
+
+  addSubmitting.value = true
   try {
     const data = await addWaitlistEntry(addForm)
 
@@ -250,6 +302,8 @@ const addEntry = async () => {
     ElMessage.error('Unable to add waitlist entry.')
   } catch (error) {
     ElMessage.error('Failed to add waitlist entry.')
+  } finally {
+    addSubmitting.value = false
   }
 }
 
@@ -261,10 +315,19 @@ const openConfirmDialog = entry => {
 }
 
 const confirmBackfill = async () => {
-  if (!selectedWaitlistId.value) {
+  if (!selectedWaitlistId.value || confirmSubmitting.value) {
     return
   }
 
+  const valid = await confirmFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+
+  if (confirmForm.start_time && confirmForm.end_time && confirmForm.start_time >= confirmForm.end_time) {
+    ElMessage.error('End time must be after start time.')
+    return
+  }
+
+  confirmSubmitting.value = true
   try {
     const data = await confirmBackfillService(selectedWaitlistId.value, confirmForm)
 
@@ -278,6 +341,8 @@ const confirmBackfill = async () => {
     ElMessage.error(data?.error || 'Unable to confirm backfill.')
   } catch (error) {
     ElMessage.error('Failed to confirm backfill.')
+  } finally {
+    confirmSubmitting.value = false
   }
 }
 
@@ -310,9 +375,15 @@ onMounted(async () => {
 
 .toolbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 10px;
   margin-bottom: 16px;
+}
+
+.scope-badges {
+  display: flex;
+  gap: 6px;
 }
 
 .proposal-alert {

@@ -97,6 +97,42 @@ test('post payment dialog opens from fee assessment row', async ({ page }) => {
   await page.getByRole('button', { name: /^cancel$/i }).last().click()
 })
 
+test('staff can post a standard cash payment from /payments/post and fee becomes paid', async ({ page, request }) => {
+  const feeId = await seedPendingFeeAssessment(request)
+  if (!feeId) {
+    test.skip(true, 'Seeding failed — check fee rules and appointment fixtures')
+  }
+
+  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
+  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const pendingResp = await apiGet(request, staffToken, '/fee-assessments', { status: 'pending', per_page: 100 })
+  const pendingFees = pendingResp?.data?.data ?? []
+  const targetFee = pendingFees.find(fee => fee.id === feeId)
+
+  if (!targetFee) {
+    test.skip(true, 'Seeded fee could not be loaded from the pending list')
+  }
+
+  const referenceId = `E2E-CASH-${Date.now()}`
+
+  await page.goto(`/payments/post?fee_id=${feeId}&amount=${targetFee.amount}`)
+  await page.locator('.el-form-item').filter({ hasText: 'Reference ID' }).locator('input').fill(referenceId)
+  await page.getByRole('button', { name: /post payment/i }).click()
+  await expect(page.locator('.el-message--success')).toBeVisible({ timeout: 8000 })
+
+  await expect.poll(async () => {
+    const paidResp = await apiGet(request, staffToken, '/fee-assessments', { status: 'paid', per_page: 100 })
+    const paidFees = paidResp?.data?.data ?? []
+    return paidFees.some(fee => fee.id === feeId)
+  }, { timeout: 10000 }).toBe(true)
+
+  await expect.poll(async () => {
+    const ledgerResp = await apiGet(request, adminToken, '/ledger')
+    const ledgerRows = ledgerResp?.data ?? []
+    return ledgerRows.some(entry => entry.reference_id === referenceId && entry.entry_type === 'payment')
+  }, { timeout: 10000 }).toBe(true)
+})
+
 test('reviewer approves waiver', async ({ page }) => {
   if (!seededFeeId) {
     test.skip(true, 'Seeding failed — check fee rules and appointment fixtures')

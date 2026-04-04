@@ -22,6 +22,11 @@ class WaitlistService
         return $this->waitlistRepository->listBySite($siteId, $departmentId, $perPage, $page);
     }
 
+    public function getEntry(int $id): ?WaitlistEntry
+    {
+        return $this->waitlistRepository->findById($id);
+    }
+
     public function addToWaitlist(array $data, User $actor): WaitlistEntry
     {
         $entry = $this->waitlistRepository->create([

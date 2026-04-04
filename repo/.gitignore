@@ -15,6 +15,7 @@ backend/storage/logs/*.log
 backend/storage/framework/cache/
 backend/storage/framework/sessions/
 backend/storage/framework/views/
+backend/storage/framework/testing/*.csv
 backend/bootstrap/cache/
 
 # Frontend

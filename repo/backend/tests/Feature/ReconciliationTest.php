@@ -236,6 +236,42 @@ class ReconciliationTest extends TestCase
         $this->assertTrue($exists, 'Row with missing terminal_id should be flagged as an exception.');
     }
 
+    public function test_variance_exactly_50_does_not_create_anomaly(): void
+    {
+        $token = $this->token('reviewer001');
+        // $50.00 variance is NOT > $50.00 threshold — no anomaly should fire
+        $file = $this->csvFile(
+            "transaction_id,amount,type,timestamp,terminal_id\nBOUNDARY-TXN-5000,50.00,sale,2026-03-27T10:00:00Z,T-1\n",
+            'boundary-50-exact.csv'
+        );
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->post('/api/reconciliation/import', ['file' => $file])
+            ->assertStatus(201);
+
+        $this->assertFalse((bool) $response->json('data.anomaly_alert'),
+            'Variance of exactly $50.00 must NOT trigger an anomaly (threshold is strictly > $50.00)');
+    }
+
+    public function test_variance_50_01_creates_anomaly(): void
+    {
+        $token = $this->token('reviewer001');
+        // $50.01 is strictly > $50.00 threshold — anomaly must fire
+        $file = $this->csvFile(
+            "transaction_id,amount,type,timestamp,terminal_id\nBOUNDARY-TXN-5001,50.01,sale,2026-03-27T10:00:00Z,T-1\n",
+            'boundary-50-01.csv'
+        );
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->post('/api/reconciliation/import', ['file' => $file])
+            ->assertStatus(201);
+
+        $this->assertTrue((bool) $response->json('data.anomaly_alert'),
+            'Variance of $50.01 must trigger an anomaly (strictly > $50.00 threshold)');
+
+        $this->assertDatabaseHas('anomaly_alerts', ['status' => 'unresolved']);
+    }
+
     public function test_resolving_already_resolved_exception_is_rejected(): void
     {
         $token = $this->token('reviewer001');

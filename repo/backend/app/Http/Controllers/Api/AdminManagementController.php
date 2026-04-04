@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Repositories\AdminUserRepository;
 use App\Services\AdminUserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +13,7 @@ class AdminManagementController extends Controller
 {
     public function __construct(
         private readonly AdminUserService $adminUserService,
+        private readonly AdminUserRepository $adminUserRepository,
     ) {
     }
 
@@ -53,7 +54,7 @@ class AdminManagementController extends Controller
             return $this->error('FORBIDDEN', Response::HTTP_FORBIDDEN);
         }
 
-        $target = User::withTrashed()->find($id);
+        $target = $this->adminUserRepository->findByIdWithTrashed($id);
         if (! $target) {
             return $this->error('NOT_FOUND', Response::HTTP_NOT_FOUND);
         }
@@ -69,7 +70,7 @@ class AdminManagementController extends Controller
             return $this->error('FORBIDDEN', Response::HTTP_FORBIDDEN);
         }
 
-        $target = User::withTrashed()->find($id);
+        $target = $this->adminUserRepository->findByIdWithTrashed($id);
         if (! $target) {
             return $this->error('NOT_FOUND', Response::HTTP_NOT_FOUND);
         }
@@ -85,7 +86,7 @@ class AdminManagementController extends Controller
             return $this->error('FORBIDDEN', Response::HTTP_FORBIDDEN);
         }
 
-        $target = User::withTrashed()->find($id);
+        $target = $this->adminUserRepository->findByIdWithTrashed($id);
         if (! $target) {
             return $this->error('NOT_FOUND', Response::HTTP_NOT_FOUND);
         }
@@ -112,7 +113,7 @@ class AdminManagementController extends Controller
             return $this->error('FORBIDDEN', Response::HTTP_FORBIDDEN);
         }
 
-        $target = User::withTrashed()->find($id);
+        $target = $this->adminUserRepository->findByIdWithTrashed($id);
         if (! $target) {
             return $this->error('NOT_FOUND', Response::HTTP_NOT_FOUND);
         }

@@ -172,9 +172,10 @@ class AppointmentController extends Controller
             'end_time'    => ['required', 'date', 'after:start_time'],
             'provider_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('site_id', $siteId)],
             'resource_id' => ['nullable', 'integer', Rule::exists('resources', 'id')->where('site_id', $siteId)],
+            'reason'      => ['required', 'string', 'min:5', 'max:1000'],
         ]);
 
-        $result = $this->appointmentService->rescheduleAppointment($appointment, $validated, $actor);
+        $result = $this->appointmentService->rescheduleAppointment($appointment, $validated, $actor, $validated['reason']);
 
         return response()->json([
             'success' => $result['success'],

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Department;
 use App\Models\User;
 use App\Repositories\AdminUserRepository;
 use App\Rules\PasswordComplexityRule;
@@ -71,6 +72,31 @@ class AdminUserService
         }
 
         $validated = $validator->validated();
+
+        // Site admins are tenant-scoped: they may only provision users in their own site.
+        if ((int) $validated['site_id'] !== (int) $actor->site_id) {
+            return [
+                'success' => false,
+                'status' => 403,
+                'error' => 'FORBIDDEN',
+                'data' => ['message' => 'Cannot create users in another site.'],
+            ];
+        }
+
+        // Keep department and site consistent.
+        $departmentInSite = Department::withoutGlobalScopes()
+            ->where('id', (int) $validated['department_id'])
+            ->where('site_id', (int) $validated['site_id'])
+            ->exists();
+
+        if (! $departmentInSite) {
+            return [
+                'success' => false,
+                'status' => 422,
+                'error' => 'VALIDATION_ERROR',
+                'data' => ['department_id' => ['The selected department does not belong to the selected site.']],
+            ];
+        }
 
         $user = $this->adminUserRepository->create([
             'identifier' => $validated['identifier'],

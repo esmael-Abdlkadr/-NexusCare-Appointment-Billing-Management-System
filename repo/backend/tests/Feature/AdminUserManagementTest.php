@@ -237,6 +237,34 @@ class AdminUserManagementTest extends TestCase
             ])->assertStatus(403);
     }
 
+    public function test_admin_cannot_create_user_in_another_site(): void
+    {
+        Site::withoutGlobalScopes()->updateOrCreate(['id' => 2], [
+            'organization_id' => 1,
+            'name' => 'Secondary Site',
+        ]);
+
+        Department::withoutGlobalScopes()->updateOrCreate(['id' => 2], [
+            'site_id' => 2,
+            'name' => 'Secondary Department',
+        ]);
+
+        $token = $this->token('admin001');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/admin/users', [
+                'identifier' => 'cross-site-create-user',
+                'email' => 'cross-site-create@test.com',
+                'password' => 'Temp@NexusCare12',
+                'role' => 'staff',
+                'site_id' => 2,
+                'department_id' => 2,
+            ])->assertStatus(403)
+            ->assertJsonPath('error', 'FORBIDDEN');
+
+        $this->assertDatabaseMissing('users', ['identifier' => 'cross-site-create-user']);
+    }
+
     public function test_admin_can_view_user(): void
     {
         $token = $this->token('admin001');
@@ -574,14 +602,87 @@ class AdminUserManagementTest extends TestCase
 
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/admin/users/'.$user->id.'/reset-password', [
-                'new_password' => 'Temp@NexusCare12',
-                'verification_note' => 'Verified in person at front desk',
+                'new_password'        => 'Temp@NexusCare12',
+                'verification_method' => 'in_person',
+                'verified_attributes' => ['government_id', 'employee_id'],
+                'verifier_role'       => 'administrator',
+                'verification_result' => 'passed',
             ])->assertOk();
 
         $this->postJson('/api/auth/login', [
             'identifier' => 'staff001',
             'password' => 'Temp@NexusCare12',
         ])->assertOk();
+    }
+
+    public function test_reset_password_missing_verification_fields_rejected(): void
+    {
+        $token = $this->token('admin001');
+        $user = User::withoutGlobalScopes()->where('identifier', 'staff001')->firstOrFail();
+
+        // Missing all verification fields → 422
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/admin/users/'.$user->id.'/reset-password', [
+                'new_password' => 'Temp@NexusCare12',
+            ])->assertStatus(422);
+    }
+
+    public function test_reset_password_invalid_verification_method_rejected(): void
+    {
+        $token = $this->token('admin001');
+        $user = User::withoutGlobalScopes()->where('identifier', 'staff001')->firstOrFail();
+
+        // Invalid verification_method → 422
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/admin/users/'.$user->id.'/reset-password', [
+                'new_password'        => 'Temp@NexusCare12',
+                'verification_method' => 'telepathy',
+                'verified_attributes' => ['government_id'],
+                'verifier_role'       => 'administrator',
+                'verification_result' => 'passed',
+            ])->assertStatus(422);
+    }
+
+    public function test_reset_password_invalid_verification_result_rejected(): void
+    {
+        $token = $this->token('admin001');
+        $user = User::withoutGlobalScopes()->where('identifier', 'staff001')->firstOrFail();
+
+        // verification_result not 'passed' → 422
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/admin/users/'.$user->id.'/reset-password', [
+                'new_password'        => 'Temp@NexusCare12',
+                'verification_method' => 'in_person',
+                'verified_attributes' => ['government_id'],
+                'verifier_role'       => 'administrator',
+                'verification_result' => 'failed',
+            ])->assertStatus(422);
+    }
+
+    public function test_reset_password_audit_contains_structured_metadata(): void
+    {
+        $token = $this->token('admin001');
+        $user = User::withoutGlobalScopes()->where('identifier', 'staff001')->firstOrFail();
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/admin/users/'.$user->id.'/reset-password', [
+                'new_password'        => 'Temp@NexusCare12',
+                'verification_method' => 'document',
+                'verified_attributes' => ['government_id', 'phone'],
+                'verifier_role'       => 'administrator',
+                'verification_result' => 'passed',
+            ])->assertOk();
+
+        $log = \App\Models\AuditLog::query()
+            ->where('action', 'PASSWORD_RESET')
+            ->where('target_id', $user->id)
+            ->latest('created_at')
+            ->firstOrFail();
+
+        $payload = $log->payload;
+        $this->assertSame('document', $payload['verification_method'] ?? null);
+        $this->assertContains('government_id', $payload['verified_attributes'] ?? []);
+        $this->assertSame('passed', $payload['verification_result'] ?? null);
     }
 
     public function test_reset_password_weak_password_rejected(): void
@@ -591,8 +692,11 @@ class AdminUserManagementTest extends TestCase
 
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/admin/users/'.$user->id.'/reset-password', [
-                'new_password' => 'weak',
-                'verification_note' => 'Verified in person at front desk',
+                'new_password'        => 'weak',
+                'verification_method' => 'in_person',
+                'verified_attributes' => ['government_id'],
+                'verifier_role'       => 'administrator',
+                'verification_result' => 'passed',
             ])->assertStatus(422);
     }
 
@@ -603,9 +707,49 @@ class AdminUserManagementTest extends TestCase
 
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/admin/users/'.$user->id.'/reset-password', [
-                'new_password' => 'Temp@NexusCare12',
-                'verification_note' => 'Verified in person at front desk',
+                'new_password'        => 'Temp@NexusCare12',
+                'verification_method' => 'in_person',
+                'verified_attributes' => ['government_id'],
+                'verifier_role'       => 'administrator',
+                'verification_result' => 'passed',
             ])->assertStatus(403);
+    }
+
+    public function test_admin_cannot_reset_password_for_user_in_another_site(): void
+    {
+        Site::withoutGlobalScopes()->updateOrCreate(['id' => 2], [
+            'organization_id' => 1,
+            'name' => 'Secondary Site',
+        ]);
+
+        Department::withoutGlobalScopes()->updateOrCreate(['id' => 2], [
+            'site_id' => 2,
+            'name' => 'Secondary Department',
+        ]);
+
+        $target = User::withoutGlobalScopes()->updateOrCreate(
+            ['identifier' => 'site2-reset-target'],
+            [
+                'password_hash' => Hash::make('Admin@12345678', ['rounds' => 12]),
+                'role' => 'staff',
+                'site_id' => 2,
+                'department_id' => 2,
+                'is_banned' => false,
+                'failed_attempts' => 0,
+            ]
+        );
+
+        $token = $this->token('admin001');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/admin/users/'.$target->id.'/reset-password', [
+                'new_password'        => 'Temp@NexusCare12',
+                'verification_method' => 'in_person',
+                'verified_attributes' => ['government_id'],
+                'verifier_role'       => 'administrator',
+                'verification_result' => 'passed',
+            ])->assertStatus(404)
+            ->assertJsonPath('error', 'NOT_FOUND');
     }
 
     public function test_admin_can_list_recycle_bin(): void

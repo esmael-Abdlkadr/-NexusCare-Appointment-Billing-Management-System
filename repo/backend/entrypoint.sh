@@ -1,31 +1,43 @@
 #!/bin/bash
 set -e
 
-# Generate APP_KEY if not already set or is the default placeholder.
-# Use a PHP fallback so key generation never silently results in empty value.
+# Generate and persist runtime secrets so `docker compose up` works without host .env.
+# If the file already exists, reuse the same values for stable sessions/JWT behavior.
+SECRETS_DIR="/var/www/storage/framework"
+SECRETS_FILE="${SECRETS_DIR}/.runtime-secrets.env"
+mkdir -p "$SECRETS_DIR"
+
+if [ -f "$SECRETS_FILE" ]; then
+  # shellcheck disable=SC1090
+  set -a
+  . "$SECRETS_FILE"
+  set +a
+fi
+
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:CHANGEME" ]; then
-  GENERATED_APP_KEY="$(php artisan key:generate --show --no-interaction 2>/dev/null || true)"
-  GENERATED_APP_KEY="$(echo "$GENERATED_APP_KEY" | tr -d '\r' | sed -n '$p')"
-  if [ -z "$GENERATED_APP_KEY" ]; then
-    GENERATED_APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
-  fi
-  export APP_KEY="$GENERATED_APP_KEY"
+  APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
 fi
 
-# Generate JWT_SECRET if not set.
-if [ -z "$JWT_SECRET" ]; then
-  GENERATED_JWT_SECRET="$(php artisan jwt:secret --show --no-interaction 2>/dev/null || true)"
-  GENERATED_JWT_SECRET="$(echo "$GENERATED_JWT_SECRET" | tr -d '\r' | sed -n '$p')"
-  if [ -z "$GENERATED_JWT_SECRET" ]; then
-    GENERATED_JWT_SECRET="$(php -r 'echo bin2hex(random_bytes(32));')"
-  fi
-  export JWT_SECRET="$GENERATED_JWT_SECRET"
+if [ -z "$JWT_SECRET" ] || [ "$JWT_SECRET" = "jwt-secret-change-me" ]; then
+  JWT_SECRET="$(php -r 'echo bin2hex(random_bytes(32));')"
 fi
 
-# Write runtime .env file so artisan commands and tests work
+cat > "$SECRETS_FILE" <<EOF
+APP_KEY=${APP_KEY}
+JWT_SECRET=${JWT_SECRET}
+EOF
+chmod 600 "$SECRETS_FILE"
+export APP_KEY JWT_SECRET
+
+# Keep runtime directories writable by php-fpm user.
+chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+# Write runtime .env file so artisan commands and tests work.
+# APP_ENV defaults to local for predictable dev behavior.
+# APP_DEBUG defaults to false for safer default deployment posture.
 cat > /var/www/.env <<EOF
 APP_NAME=NexusCare
-APP_ENV=${APP_ENV:-production}
+APP_ENV=${APP_ENV:-local}
 APP_KEY=${APP_KEY}
 APP_DEBUG=${APP_DEBUG:-false}
 APP_URL=${APP_URL:-http://localhost:8000}

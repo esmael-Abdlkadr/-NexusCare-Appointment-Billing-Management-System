@@ -55,7 +55,7 @@ const mountView = () =>
         createTestingPinia({
           createSpy: vi.fn,
           initialState: {
-            auth: { user: { role: 'staff', department_id: 1 } }
+            auth: { user: { role: 'staff', site_id: 1, department_id: 1 } }
           }
         })
       ]
@@ -85,6 +85,13 @@ describe('WaitlistView.vue', () => {
     expect(idCol.props('sortable')).toBeTruthy()
     expect(priorityCol).toBeTruthy()
     expect(priorityCol.props('sortable')).toBeTruthy()
+    expect(listWaitlistMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 1,
+        site_id: 1,
+        department_id: 1
+      })
+    )
   })
 
   it('proposed entry populates proposedEntries computed and triggers confirm dialog on click', async () => {

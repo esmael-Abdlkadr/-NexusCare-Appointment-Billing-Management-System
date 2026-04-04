@@ -1,9 +1,9 @@
 <template>
   <div class="page">
     <div class="toolbar">
-      <h2>Content Moderation</h2>
+      <h2>Account Moderation</h2>
       <span style="color: #909399; font-size: 13px; margin-left: 12px;">
-        Review banned and muted users — apply or lift moderation actions
+        Review banned and muted accounts — apply or lift account restrictions
       </span>
     </div>
 
@@ -13,7 +13,7 @@
     </el-tabs>
 
     <el-card v-loading="loading">
-      <el-table :data="rows" style="width: 100%" empty-text="No users in this moderation queue.">
+      <el-table :data="rows" style="width: 100%" empty-text="No accounts in this moderation queue.">
         <el-table-column prop="identifier" label="Identifier" min-width="160" />
         <el-table-column prop="role" label="Role" width="110">
           <template #default="{ row }">
@@ -68,7 +68,7 @@
         <el-card shadow="never">
           <template #header><span style="font-weight: 600;">Bulk Actions</span></template>
           <p style="color: #606266; font-size: 13px; margin-bottom: 12px;">
-            Apply moderation actions across all currently listed users.
+            Apply moderation actions across all currently listed accounts.
           </p>
           <el-button type="danger" size="small" :loading="bulkLoading" @click="bulkBanAll">
             Ban All Listed

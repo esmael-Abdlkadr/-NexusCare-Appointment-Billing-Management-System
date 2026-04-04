@@ -26,20 +26,28 @@ test('financial report renders without error', async ({ page }) => {
 test('admin can access audit report section', async ({ page }) => {
   await loginAsAdmin(page)
   await page.goto('/reports')
-  const auditTab = page.getByRole('tab', { name: /audit/i })
-  if (await auditTab.count()) {
-    await auditTab.click()
-    await expect(page.locator('.el-table, .el-empty').first()).toBeVisible({ timeout: 8000 })
-  } else {
-    await expect(page.locator('body')).toBeVisible()
-  }
+  await expect(page.getByRole('button', { name: /download audit/i })).toBeVisible({ timeout: 8000 })
 })
 
 test('staff cannot access reports page', async ({ page }) => {
   await loginAsStaff(page)
   await page.goto('/reports')
-  const redirected = page.url().includes('/login')
-  if (!redirected) {
-    await expect(page.locator('body')).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  const forbiddenIndicators = page.getByText('Access Denied')
+  const goBackButton = page.getByRole('button', { name: /go back/i })
+  const reportsHeader = page.getByRole('heading', { name: /reports/i })
+  const reportsButtons = page.getByRole('button', { name: /download appointments|download financial|download audit/i })
+
+  if (page.url().includes('/forbidden') || await forbiddenIndicators.isVisible().catch(() => false) || await goBackButton.isVisible().catch(() => false)) {
+    if (await forbiddenIndicators.isVisible().catch(() => false)) {
+      await expect(forbiddenIndicators).toBeVisible({ timeout: 8000 })
+    } else {
+      await expect(goBackButton).toBeVisible({ timeout: 8000 })
+    }
+    return
   }
+
+  // If route remains reachable, it must still enforce denial by hiding report actions.
+  await expect(reportsHeader).toBeVisible({ timeout: 8000 })
+  await expect(reportsButtons).toHaveCount(0)
 })

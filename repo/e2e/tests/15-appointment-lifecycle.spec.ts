@@ -45,10 +45,10 @@ const seedRequestedAppointment = async (request) => {
 }
 
 // ── 1. requested → confirmed ────────────────────────────────────────────────
-// Only admin/reviewer see the Confirm button for requested appointments.
+// Staff and admin can see and use the Confirm button for requested appointments.
 test('lifecycle: admin confirms a requested appointment', async ({ page, request }) => {
-  const result = await seedRequestedAppointment(request, 2)
-  if (!result?.id) { test.skip(true, 'Seeding failed'); return }
+  const result = await seedRequestedAppointment(request)
+  expect(result?.id, 'Seeding requested appointment must succeed').toBeTruthy()
 
   await loginAsAdmin(page)
   await page.goto('/appointments')
@@ -77,10 +77,9 @@ test('lifecycle: staff checks in a confirmed appointment', async ({ page, reques
   const clientId = clients?.data?.[0]?.id
   const provider = providers?.data?.[0]
   const resourceId = resources?.data?.[0]?.id
-  if (!clientId || !provider?.id || !resourceId) {
-    test.skip(true, 'Could not seed appointment — missing client/provider/resource')
-    return
-  }
+  expect(clientId, 'Seeding requires a client fixture').toBeTruthy()
+  expect(provider?.id, 'Seeding requires a provider fixture').toBeTruthy()
+  expect(resourceId, 'Seeding requires a resource fixture').toBeTruthy()
 
   const seed2 = Date.now()
   const start = new Date()
@@ -99,7 +98,7 @@ test('lifecycle: staff checks in a confirmed appointment', async ({ page, reques
     end_time: end.toISOString()
   })
   const id = created?.data?.appointment?.id
-  if (!id) { test.skip(true, 'Appointment creation failed'); return }
+  expect(id, 'Seeding confirmed appointment must return appointment id').toBeTruthy()
 
   await request.patch(`http://localhost:80/api/appointments/${id}/status`, {
     headers: { Authorization: `Bearer ${adminToken}` },
@@ -134,10 +133,9 @@ test('lifecycle: staff completes a checked-in appointment', async ({ page, reque
   const clientId = clients?.data?.[0]?.id
   const provider = providers?.data?.[0]
   const resourceId = resources?.data?.[0]?.id
-  if (!clientId || !provider?.id || !resourceId) {
-    test.skip(true, 'Could not fetch required IDs for seeding')
-    return
-  }
+  expect(clientId, 'Seeding requires a client fixture').toBeTruthy()
+  expect(provider?.id, 'Seeding requires a provider fixture').toBeTruthy()
+  expect(resourceId, 'Seeding requires a resource fixture').toBeTruthy()
 
   const seed3 = Date.now()
   const start = new Date()
@@ -156,7 +154,7 @@ test('lifecycle: staff completes a checked-in appointment', async ({ page, reque
     end_time: end.toISOString()
   })
   const id = created?.data?.appointment?.id
-  if (!id) { test.skip(true, 'Appointment creation failed'); return }
+  expect(id, 'Seeding checked-in appointment must return appointment id').toBeTruthy()
 
   await request.patch(`http://localhost:80/api/appointments/${id}/status`, {
     headers: { Authorization: `Bearer ${adminToken}` },
@@ -194,10 +192,9 @@ test('lifecycle: staff marks a confirmed appointment as no-show', async ({ page,
   const clientId = clients?.data?.[0]?.id
   const provider = providers?.data?.[0]
   const resourceId = resources?.data?.[0]?.id
-  if (!clientId || !provider?.id || !resourceId) {
-    test.skip(true, 'Could not fetch required IDs for seeding')
-    return
-  }
+  expect(clientId, 'Seeding requires a client fixture').toBeTruthy()
+  expect(provider?.id, 'Seeding requires a provider fixture').toBeTruthy()
+  expect(resourceId, 'Seeding requires a resource fixture').toBeTruthy()
 
   const seed4 = Date.now()
   const start = new Date()
@@ -217,7 +214,7 @@ test('lifecycle: staff marks a confirmed appointment as no-show', async ({ page,
   })
 
   const id = created?.data?.appointment?.id
-  if (!id) { test.skip(true, 'Appointment creation failed'); return }
+  expect(id, 'Seeding no-show appointment must return appointment id').toBeTruthy()
 
   // No Show is valid from 'confirmed' (not checked_in) per the backend state machine
   await request.patch(`http://localhost:80/api/appointments/${id}/status`, {

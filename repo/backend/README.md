@@ -89,8 +89,10 @@ Sensitive fields (`password_hash`, `access_token`, `government_id`) are redacted
 
 | Command | Schedule | Purpose |
 |---|---|---|
-| `app:purge-expired-records` | Daily | Soft-delete records older than 24 months |
-| `app:incremental-sync` | Every 15 min | Fingerprint-based incremental data sync |
+| `fees:assess-noshows` | Every minute | Assess no-show fees after grace period elapses |
+| `fees:assess-overdue` | Daily at 00:05 | Assess overdue fines (1.5% per 30 days) |
+| `sync:incremental` | Every 15 min | Fingerprint-based incremental data sync between sites |
+| `records:purge` | Monthly | Purge records beyond retention threshold |
 
 ---
 

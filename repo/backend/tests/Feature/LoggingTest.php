@@ -24,31 +24,27 @@ class LoggingTest extends TestCase
 
     public function test_payment_post_writes_to_billing_log_channel(): void
     {
-        Log::shouldReceive('channel')
-            ->once()
-            ->with('billing')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $message, array $context): bool {
-                return ($context['event'] ?? null) === 'payment_posted'
-                    && isset($context['amount'])
-                    && isset($context['client_id']);
-            })
-            ->andReturnNull();
-
         $token = $this->token('staff001');
         $client = User::withoutGlobalScopes()->where('identifier', 'client001')->firstOrFail();
+        $referenceId = 'LOG-PAY-'.Str::upper(Str::random(8));
+        $billingLogPath = storage_path('logs/billing-'.now()->format('Y-m-d').'.log');
+        $initialSize = file_exists($billingLogPath) ? filesize($billingLogPath) : 0;
 
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/payments', [
-                'reference_id' => 'LOG-PAY-001',
+                'reference_id' => $referenceId,
                 'amount' => 15.50,
                 'method' => 'cash',
                 'client_id' => $client->id,
             ])
             ->assertStatus(201);
+
+        clearstatcache(true, $billingLogPath);
+        $contents = file_exists($billingLogPath) ? file_get_contents($billingLogPath) : '';
+        $newLogs = substr((string) $contents, (int) $initialSize);
+
+        $this->assertStringContainsString('payment_posted', $newLogs);
+        $this->assertStringContainsString($referenceId, $newLogs);
     }
 
     public function test_successful_login_writes_to_auth_log_channel(): void

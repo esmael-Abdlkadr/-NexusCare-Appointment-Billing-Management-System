@@ -14,7 +14,7 @@
         >
           <div class="version-card">
             <div>Changed by: {{ version.changed_by }}</div>
-            <pre>{{ JSON.stringify(version.snapshot, null, 2) }}</pre>
+            <pre>{{ JSON.stringify(maskPayload(version.snapshot), null, 2) }}</pre>
           </div>
         </el-timeline-item>
       </el-timeline>
@@ -27,6 +27,7 @@ import { ElButton, ElCard, ElMessage, ElTimeline, ElTimelineItem } from 'element
 import { onMounted, ref } from 'vue'
 import { getAppointmentVersions } from '@/services/appointmentService'
 import { useRoute, useRouter } from 'vue-router'
+import { maskPayload } from '@/utils/maskPayload'
 
 const route = useRoute()
 const router = useRouter()

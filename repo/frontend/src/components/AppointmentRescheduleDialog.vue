@@ -30,7 +30,9 @@
     </div>
     <template #footer>
       <el-button size="small" @click="visible = false">Close</el-button>
-      <el-button size="small" type="primary" @click="confirmReschedule">Save</el-button>
+      <el-button size="small" type="primary" :loading="submitting" :disabled="submitting" @click="confirmReschedule">
+        Save
+      </el-button>
     </template>
   </el-dialog>
 </template>
@@ -50,6 +52,7 @@ const reason = ref('')
 const conflictType = ref('')
 const nextSlots = ref([])
 const rescheduleFormRef = ref(null)
+const submitting = ref(false)
 
 const clearConflict = () => {
   conflictType.value = ''
@@ -73,14 +76,22 @@ const applySlot = slot => {
 }
 
 const confirmReschedule = async () => {
+  if (submitting.value) return
+
   if (!startTime.value || !endTime.value) {
     ElMessage.error('Start and end times are required')
+    return
+  }
+
+  if (startTime.value >= endTime.value) {
+    ElMessage.error('End time must be after start time')
     return
   }
 
   const valid = await rescheduleFormRef.value?.validate().catch(() => false)
   if (!valid) return
 
+  submitting.value = true
   try {
     await rescheduleAppointment(appointmentId.value, {
       start_time: startTime.value,
@@ -98,6 +109,8 @@ const confirmReschedule = async () => {
       return
     }
     ElMessage.error('Failed to reschedule appointment')
+  } finally {
+    submitting.value = false
   }
 }
 

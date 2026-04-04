@@ -1,6 +1,10 @@
 <template>
   <section class="page">
     <div class="toolbar">
+      <div class="scope-badges">
+        <el-tag size="small" type="info">Site #{{ scope.siteId }}</el-tag>
+        <el-tag size="small" type="info">Dept #{{ scope.departmentId }}</el-tag>
+      </div>
       <el-select v-model="filters.status" clearable placeholder="Filter by status" class="status-filter" @change="handleStatusChange">
         <el-option v-for="status in APPOINTMENT_STATUSES" :key="status" :value="status" :label="status" />
       </el-select>
@@ -102,6 +106,10 @@ import { APPOINTMENT_STATUSES, APPOINTMENT_STATUS_TAG } from '@/utils/constants'
 const router = useRouter()
 const authStore = useAuthStore()
 const role = computed(() => authStore.user?.role || 'staff')
+const scope = computed(() => ({
+  siteId: authStore.user?.site_id || 1,
+  departmentId: authStore.user?.department_id || 1
+}))
 
 const filters = reactive({
   status: ''
@@ -125,7 +133,7 @@ const isStaffOrAdmin = computed(() => ['staff', 'administrator'].includes(role.v
 const isAdminOrReviewer = computed(() => ['administrator', 'reviewer'].includes(role.value))
 
 const primaryAction = row => {
-  if (row.status === 'requested' && isAdminOrReviewer.value) {
+  if (row.status === 'requested' && isStaffOrAdmin.value) {
     return { label: 'Confirm', status: 'confirmed', type: 'primary' }
   }
 
@@ -155,7 +163,9 @@ const secondaryActions = row => {
     }
   }
 
-  actions.push({ label: 'View History', command: 'view_history' })
+  if (isAdminOrReviewer.value) {
+    actions.push({ label: 'View History', command: 'view_history' })
+  }
 
   return actions
 }
@@ -167,7 +177,9 @@ const loadAppointments = async (targetPage = page.value) => {
   try {
     const data = await listAppointments({
       status: filters.status || undefined,
-      page: page.value
+      page: page.value,
+      site_id: scope.value.siteId,
+      department_id: scope.value.departmentId
     })
 
     const payload = data?.data || {}
@@ -240,6 +252,12 @@ onMounted(() => loadAppointments(1))
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
+}
+
+.scope-badges {
+  margin-right: auto;
+  display: flex;
+  gap: 6px;
 }
 
 .status-filter {

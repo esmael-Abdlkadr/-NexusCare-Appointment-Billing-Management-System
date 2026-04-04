@@ -51,7 +51,7 @@ describe('Login.vue', () => {
     await wrapper.get('input[placeholder="Enter identifier"]').setValue('@bad')
     await wrapper.get('input[placeholder="Enter password"]').setValue('ValidPass@123')
     await wrapper.get('button.signin-btn').trigger('click')
-    expect(wrapper.text()).toContain('Identifier must be 3–100 characters')
+    expect(wrapper.text()).toContain('Enter a valid employee ID, student ID, or email-style username')
   })
 
   it('calls authStore.login with correct payload', async () => {
