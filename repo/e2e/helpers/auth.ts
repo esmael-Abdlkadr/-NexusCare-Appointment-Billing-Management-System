@@ -1,5 +1,13 @@
 import { expect, Page } from '@playwright/test'
 
+export function requireEnv(name: string): string {
+  const val = process.env[name]
+  if (!val) {
+    throw new Error(`Missing required env var ${name}. Set it before running E2E tests.`)
+  }
+  return val
+}
+
 export async function loginAs(page: Page, identifier: string, password: string) {
   await page.goto('/login')
   await page.locator('input[placeholder="Enter identifier"]').fill(identifier)
@@ -9,16 +17,16 @@ export async function loginAs(page: Page, identifier: string, password: string) 
 }
 
 export async function loginAsAdmin(page: Page) {
-  await loginAs(page, 'admin', 'Admin@NexusCare1')
+  await loginAs(page, requireEnv('E2E_ADMIN_USER'), requireEnv('E2E_ADMIN_PASS'))
   await expect(page.locator('.sidebar')).toBeVisible()
 }
 
 export async function loginAsStaff(page: Page) {
-  await loginAs(page, 'staff1', 'Staff@NexusCare1')
+  await loginAs(page, requireEnv('E2E_STAFF_USER'), requireEnv('E2E_STAFF_PASS'))
 }
 
 export async function loginAsReviewer(page: Page) {
-  await loginAs(page, 'reviewer1', 'Reviewer@NexusCare1')
+  await loginAs(page, requireEnv('E2E_REVIEWER_USER'), requireEnv('E2E_REVIEWER_PASS'))
 }
 
 export async function logout(page: Page) {

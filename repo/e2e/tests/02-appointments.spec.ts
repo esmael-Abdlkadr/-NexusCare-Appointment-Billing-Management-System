@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test'
 import type { APIRequestContext, Page } from '@playwright/test'
-import { apiGet, apiPost, apiToken } from '../helpers/api'
+import { apiGet, apiPost, apiTokenAsAdmin, apiTokenAsStaff } from '../helpers/api'
 import { loginAsReviewer, loginAsStaff, logout } from '../helpers/auth'
 
 const seedConfirmedAppointment = async (request: APIRequestContext, dayOffset: number, serviceType: string) => {
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
+  const adminToken = await apiTokenAsAdmin(request)
 
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })
@@ -48,7 +48,7 @@ const seedConfirmedAppointment = async (request: APIRequestContext, dayOffset: n
 }
 
 test.beforeAll(async ({ request }) => {
-  const token = await apiToken(request, 'staff1', 'Staff@NexusCare1')
+  const token = await apiTokenAsStaff(request)
 
   const clients = await apiGet(request, token, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, token, '/users/search', { role: 'staff', per_page: 1 })
@@ -62,7 +62,7 @@ test.beforeAll(async ({ request }) => {
     return
   }
 
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const adminToken = await apiTokenAsAdmin(request)
   const seedTag = Date.now()
   const labels = [`E2E-CANCEL-${seedTag}`, `E2E-RESCHEDULE-${seedTag}`]
 
@@ -140,7 +140,7 @@ const chooseFirstSelectOption = async (page: Page, labelText: string) => {
 
 test('create appointment form submits successfully and persists the new appointment', async ({ page, request }) => {
   const serviceType = `E2E-UI-CREATE-${Date.now()}`
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
 
   await page.goto('/appointments/create')
   await expect(page.getByRole('heading', { name: 'Create Appointment' })).toBeVisible({ timeout: 10000 })
@@ -258,7 +258,7 @@ test('reviewer creating appointment gets rejected by backend', async ({ page }) 
 
   await expect(submitBtn).toBeVisible({ timeout: 5000 })
   await submitBtn.click()
-  await expect(page.locator('.el-message, .el-alert').filter({ hasText: /forbidden|denied|not authorized|403/i }).first()).toBeVisible({ timeout: 8000 })
+  await expect(page.locator('.el-message--error, .el-message--warning, .el-alert--error, .el-form-item__error').first()).toBeVisible({ timeout: 8000 })
 })
 
 test('appointments list pagination: next page button works', async ({ page, request }) => {

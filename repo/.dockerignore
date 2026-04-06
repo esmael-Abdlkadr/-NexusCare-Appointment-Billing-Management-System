@@ -1,0 +1,8 @@
+# Transient build/install artifacts — excluded from Docker context and delivery
+frontend/node_modules
+frontend/dist
+e2e/node_modules
+e2e/test-results
+e2e/playwright-report
+.tmp
+.DS_Store

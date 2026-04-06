@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { loginAsAdmin, loginAsStaff, logout } from '../helpers/auth'
+import { loginAs, loginAsAdmin, loginAsStaff, logout, requireEnv } from '../helpers/auth'
 
 test('login with valid admin credentials navigates to appointments page', async ({ page }) => {
   await loginAsAdmin(page)
@@ -9,7 +9,7 @@ test('login with valid admin credentials navigates to appointments page', async 
 
 test('login with wrong password shows error message', async ({ page }) => {
   await page.goto('/login')
-  await page.locator('input[placeholder="Enter identifier"]').fill('admin')
+  await page.locator('input[placeholder="Enter identifier"]').fill(requireEnv('E2E_ADMIN_USER'))
   await page.locator('input[placeholder="Enter password"]').fill('WrongPassword@1')
   await page.getByRole('button', { name: /sign in|login/i }).click()
   await expect(page.locator('.el-alert--error')).toBeVisible()
@@ -18,9 +18,10 @@ test('login with wrong password shows error message', async ({ page }) => {
 
 test('login with banned account shows banned error', async ({ page }) => {
   await page.goto('/login')
-  await page.locator('input[placeholder="Enter identifier"]').fill('banned_user')
-  await page.locator('input[placeholder="Enter password"]').fill('Banned@NexusCare1')
+  await page.locator('input[placeholder="Enter identifier"]').fill(requireEnv('E2E_BANNED_USER'))
+  await page.locator('input[placeholder="Enter password"]').fill(requireEnv('E2E_BANNED_PASS'))
   await page.getByRole('button', { name: /sign in|login/i }).click()
+  await expect(page).toHaveURL(/\/login/, { timeout: 5000 })
   await expect(page.locator('.el-alert--error')).toBeVisible()
   await expect(page.locator('.el-alert--error')).toContainText(/banned|unable|invalid/i)
 })
@@ -67,10 +68,7 @@ test('page refresh preserves authenticated session', async ({ page }) => {
 })
 
 test('muted user can log in successfully', async ({ page }) => {
-  await page.goto('/login')
-  await page.locator('input[placeholder="Enter identifier"]').fill('muted_user')
-  await page.locator('input[placeholder="Enter password"]').fill('Muted@NexusCare1')
-  await page.getByRole('button', { name: /sign in|login/i }).click()
+  await loginAs(page, requireEnv('E2E_MUTED_USER'), requireEnv('E2E_MUTED_PASS'))
   // Muted users are not banned — login must succeed and sidebar must be visible
   await expect(page).toHaveURL(/appointments|\//, { timeout: 8000 })
   await expect(page.locator('.sidebar')).toBeVisible({ timeout: 8000 })
@@ -87,8 +85,8 @@ test('login clears stale localStorage auth keys', async ({ page }) => {
     localStorage.setItem('auth', 'leftover')
   })
 
-  await page.locator('input[placeholder="Enter identifier"]').fill('admin')
-  await page.locator('input[placeholder="Enter password"]').fill('Admin@NexusCare1')
+  await page.locator('input[placeholder="Enter identifier"]').fill(requireEnv('E2E_ADMIN_USER'))
+  await page.locator('input[placeholder="Enter password"]').fill(requireEnv('E2E_ADMIN_PASS'))
   await page.getByRole('button', { name: /sign in|login/i }).click()
   await expect(page).toHaveURL(/appointments|\//, { timeout: 8000 })
 

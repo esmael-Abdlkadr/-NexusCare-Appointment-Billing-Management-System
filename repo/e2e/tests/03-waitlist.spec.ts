@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { apiGet, apiPost, apiToken } from '../helpers/api'
+import { apiGet, apiPost, apiTokenAsStaff } from '../helpers/api'
 import { loginAsStaff } from '../helpers/auth'
 
 test.beforeAll(async ({ request }) => {
-  const token = await apiToken(request, 'staff1', 'Staff@NexusCare1')
+  const token = await apiTokenAsStaff(request)
   const users = await apiGet(request, token, '/users/search', { per_page: 1 })
   const clientId = users?.data?.[0]?.id
 

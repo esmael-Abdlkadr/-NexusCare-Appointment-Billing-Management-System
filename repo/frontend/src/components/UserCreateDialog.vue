@@ -16,7 +16,7 @@
     </el-form>
     <template #footer>
       <el-button @click="visible = false">Cancel</el-button>
-      <el-button type="primary" @click="submitCreate">Create</el-button>
+      <el-button type="primary" :loading="submitting" :disabled="submitting" @click="submitCreate">Create</el-button>
     </template>
   </el-dialog>
 </template>
@@ -30,6 +30,7 @@ import { extractError } from '@/utils/apiError'
 const emit = defineEmits(['created'])
 
 const visible = ref(false)
+const submitting = ref(false)
 const createFormRef = ref(null)
 const createForm = ref({
   identifier: '',
@@ -93,9 +94,11 @@ const open = () => {
 }
 
 const submitCreate = async () => {
+  if (submitting.value) return
   const valid = await createFormRef.value?.validate().catch(() => false)
   if (!valid) return
 
+  submitting.value = true
   try {
     const data = await createAdminUser(createForm.value)
     if (data?.success) {
@@ -108,6 +111,8 @@ const submitCreate = async () => {
     ElMessage.error(data?.error || 'Failed to create user.')
   } catch (error) {
     ElMessage.error(extractError(error, 'Failed to create user.'))
+  } finally {
+    submitting.value = false
   }
 }
 

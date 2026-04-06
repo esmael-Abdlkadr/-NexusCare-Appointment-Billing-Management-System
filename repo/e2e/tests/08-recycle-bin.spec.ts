@@ -1,15 +1,16 @@
 import { expect, test } from '@playwright/test'
-import { apiDelete, apiPost, apiToken } from '../helpers/api'
-import { loginAsAdmin } from '../helpers/auth'
+import { apiDelete, apiPost, apiTokenAsAdmin } from '../helpers/api'
+import { loginAsAdmin, requireEnv } from '../helpers/auth'
 
 test.beforeAll(async ({ request }) => {
-  const token = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const token = await apiTokenAsAdmin(request)
+  const tempPass = requireEnv('E2E_TEMP_PASS')
 
   const createAndDelete = async (suffix: string) => {
     const identifier = `e2e-recycle-tmp-${suffix}-${Date.now()}`
     const created = await apiPost(request, token, '/admin/users', {
       identifier,
-      password: 'Tmp@Delete1234',
+      password: tempPass,
       role: 'staff',
       site_id: 1,
       department_id: 1

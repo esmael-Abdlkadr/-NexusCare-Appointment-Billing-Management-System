@@ -25,9 +25,9 @@
         </el-form-item>
 
         <div class="buttons">
-          <el-button type="primary" @click="download('appointments')">Download Appointments</el-button>
-          <el-button type="primary" @click="download('financial')">Download Financial</el-button>
-          <el-button type="primary" @click="download('audit')">Download Audit</el-button>
+          <el-button type="primary" :loading="downloadingType === 'appointments'" :disabled="!!downloadingType" @click="download('appointments')">Download Appointments</el-button>
+          <el-button type="primary" :loading="downloadingType === 'financial'" :disabled="!!downloadingType" @click="download('financial')">Download Financial</el-button>
+          <el-button type="primary" :loading="downloadingType === 'audit'" :disabled="!!downloadingType" @click="download('audit')">Download Audit</el-button>
         </div>
       </el-form>
     </el-card>
@@ -41,8 +41,11 @@ import { getReport } from '@/services/reportService'
 
 const dateRange = ref([])
 const format = ref('csv')
+const downloadingType = ref(null)
 
 const download = async type => {
+  if (downloadingType.value) return
+  downloadingType.value = type
   try {
     const from = dateRange.value?.[0]
     const to = dateRange.value?.[1]
@@ -65,6 +68,8 @@ const download = async type => {
     window.URL.revokeObjectURL(url)
   } catch (error) {
     ElMessage.error('Failed to download report.')
+  } finally {
+    downloadingType.value = null
   }
 }
 </script>

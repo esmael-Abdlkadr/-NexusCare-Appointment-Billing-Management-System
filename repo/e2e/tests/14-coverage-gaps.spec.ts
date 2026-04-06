@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test'
-import { apiToken } from '../helpers/api'
+import { apiTokenAsReviewer } from '../helpers/api'
 import { loginAsAdmin, loginAsReviewer, loginAsStaff } from '../helpers/auth'
 
 const API_BASE = 'http://localhost:80/api'
 
 async function seedReconciliationFixtures(request: any) {
-  const reviewerToken = await apiToken(request, 'reviewer1', 'Reviewer@NexusCare1')
+  const reviewerToken = await apiTokenAsReviewer(request)
   expect(reviewerToken, 'Reviewer token is required to seed reconciliation fixtures').toBeTruthy()
 
   const seed = Date.now()

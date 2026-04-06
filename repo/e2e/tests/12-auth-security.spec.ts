@@ -3,17 +3,24 @@ import { loginAsAdmin, loginAsReviewer, loginAsStaff } from '../helpers/auth'
 
 test('locked account shows locked message on login', async ({ page }) => {
   // Use staff2 — dedicated for lockout test so staff1 remains unlocked for other tests
+  const staff2User = process.env.E2E_STAFF2_USER
+  const staff2Pass = process.env.E2E_STAFF2_PASS
+  if (!staff2User || !staff2Pass) {
+    test.skip()
+    return
+  }
+
   await page.goto('/login')
 
   for (let i = 0; i < 5; i++) {
-    await page.locator('input[placeholder="Enter identifier"]').fill('staff2')
+    await page.locator('input[placeholder="Enter identifier"]').fill(staff2User)
     await page.locator('input[placeholder="Enter password"]').fill('WrongPass@999')
     await page.getByRole('button', { name: /sign in|login/i }).click()
     await page.waitForTimeout(400)
   }
 
-  await page.locator('input[placeholder="Enter identifier"]').fill('staff2')
-  await page.locator('input[placeholder="Enter password"]').fill('Staff2@NexusCare1')
+  await page.locator('input[placeholder="Enter identifier"]').fill(staff2User)
+  await page.locator('input[placeholder="Enter password"]').fill(staff2Pass)
   await page.getByRole('button', { name: /sign in|login/i }).click()
 
   await expect(page.locator('.el-alert--error')).toBeVisible({ timeout: 5000 })

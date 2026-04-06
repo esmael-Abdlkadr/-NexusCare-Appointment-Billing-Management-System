@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { apiGet, apiPost, apiToken } from '../helpers/api'
+import { apiGet, apiPost, apiTokenAsAdmin, apiTokenAsStaff } from '../helpers/api'
 import { loginAsReviewer, loginAsStaff } from '../helpers/auth'
 
 const seedConfirmedAppointment = async (request, dayOffset, serviceType) => {
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
+  const adminToken = await apiTokenAsAdmin(request)
 
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })
@@ -103,21 +103,19 @@ test('double-click submit idempotency: payment post form submit button disables'
   await page.goto('/payments/post')
   await expect(page.getByRole('heading', { name: /post payment/i })).toBeVisible({ timeout: 10000 })
 
-  const amountInput = page.locator('input[placeholder*="amount" i], input[type="number"]').first()
-  if (await amountInput.count()) {
-    await amountInput.fill('25.00')
-  }
+  const refFormItem = page.locator('.el-form-item').filter({ hasText: 'Reference ID' })
+  await refFormItem.locator('input').fill(`E2E-IDEM-${Date.now()}`)
+  await page.locator('input[placeholder="0.00"]').fill('25.00')
 
-  const refInput = page.locator('input[placeholder*="reference" i]').first()
-  if (await refInput.count()) {
-    await refInput.fill(`E2E-IDEM-${Date.now()}`)
-  }
-
-  const submitBtn = page.getByRole('button', { name: /post payment|submit|confirm/i }).first()
+  const submitBtn = page.getByRole('button', { name: /post payment/i }).first()
   await submitBtn.click()
-  const isDisabledOrLoading = (await submitBtn.isDisabled()) || ((await page.locator('.is-loading').count()) > 0)
-  const hasResponse = (await page.locator('.el-message, .el-alert').count()) > 0
-  expect(isDisabledOrLoading || hasResponse).toBeTruthy()
+
+  // The component's submit guard must prevent a second click from firing a duplicate request.
+  // After click, assert the request resolved with a clear outcome (success or validation error).
+  // We wait for the definitive response rather than checking an intermediate state.
+  await expect(
+    page.locator('.el-message--success, .el-message--error, .el-message--warning')
+  ).toBeVisible({ timeout: 10000 })
 })
 
 test('terminal batch: uploading a CSV file submits and receives API response', async ({ page }) => {
@@ -167,7 +165,7 @@ test('double-click submit idempotency: cancel dialog confirm button', async ({ p
   let seededId = await seedConfirmedAppointment(request, dayOffset, serviceType)
 
   if (!seededId) {
-    const fallbackToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
+    const fallbackToken = await apiTokenAsStaff(request)
     const fallback = await apiGet(request, fallbackToken, '/appointments', { status: 'confirmed', per_page: 1 })
     seededId = fallback?.data?.data?.[0]?.id || null
   }

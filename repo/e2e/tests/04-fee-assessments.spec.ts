@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { apiGet, apiPost, apiToken } from '../helpers/api'
+import { apiGet, apiPost, apiTokenAsAdmin, apiTokenAsStaff } from '../helpers/api'
 import { loginAsReviewer, loginAsStaff, logout } from '../helpers/auth'
 
 const BASE = 'http://localhost:80/api'
@@ -11,8 +11,8 @@ const BASE = 'http://localhost:80/api'
  * Returns the fee assessment id (or null on failure).
  */
 const seedPendingFeeAssessment = async (request): Promise<number | null> => {
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
+  const adminToken = await apiTokenAsAdmin(request)
+  const staffToken = await apiTokenAsStaff(request)
 
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })
@@ -103,8 +103,8 @@ test('staff can post a standard cash payment from /payments/post and fee becomes
     test.skip(true, 'Seeding failed — check fee rules and appointment fixtures')
   }
 
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
+  const adminToken = await apiTokenAsAdmin(request)
   const pendingResp = await apiGet(request, staffToken, '/fee-assessments', { status: 'pending', per_page: 100 })
   const pendingFees = pendingResp?.data?.data ?? []
   const targetFee = pendingFees.find(fee => fee.id === feeId)

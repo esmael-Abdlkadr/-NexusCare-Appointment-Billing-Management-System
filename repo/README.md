@@ -69,18 +69,24 @@ npx playwright test
 
 ## Login Credentials
 
-| Identifier    | Password              | Role          | Notes                        |
-|---------------|-----------------------|---------------|------------------------------|
-| `admin`       | `Admin@NexusCare1`    | Administrator | Full access to all features  |
-| `staff1`      | `Staff@NexusCare1`    | Staff         | Site 1 — scheduling & billing|
-| `staff2`      | `Staff2@NexusCare1`   | Staff         | Site 2                       |
-| `staff3`      | `Staff3@NexusCare1`   | Staff         | Site 1                       |
-| `reviewer1`   | `Reviewer@NexusCare1` | Reviewer      | Site 1 — compliance & waivers|
-| `reviewer2`   | `Reviewer2@NexusCare1`| Reviewer      | Site 2                       |
-| `client1`     | `Client@NexusCare1`   | Staff/Client  | Site 1 — demo client         |
-| `client2`     | `Client2@NexusCare1`  | Staff/Client  | Site 1 — demo client         |
-| `banned_user` | `Banned@NexusCare1`   | Staff         | Account is banned (demo)     |
-| `muted_user`  | `Muted@NexusCare1`    | Staff         | Account is muted (demo)      |
+Demo users are created by the database seeder on first start. Credentials are **not** committed to the repository.
+
+To log in locally, check the seeder output or ask your team lead for the current demo passwords.
+
+### E2E Test Credentials
+
+E2E tests read credentials from environment variables. Create a local `.env` file in the `e2e/` directory (gitignored) or export them in your shell before running tests:
+
+```bash
+export E2E_ADMIN_USER=admin
+export E2E_ADMIN_PASS=<your-seeded-admin-password>
+export E2E_STAFF_USER=staff1
+export E2E_STAFF_PASS=<your-seeded-staff-password>
+export E2E_REVIEWER_USER=reviewer1
+export E2E_REVIEWER_PASS=<your-seeded-reviewer-password>
+```
+
+If any of these variables are missing, the E2E suite will fail immediately with a clear error message.
 
 ---
 

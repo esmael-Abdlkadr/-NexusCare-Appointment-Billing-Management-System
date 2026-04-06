@@ -10,7 +10,7 @@
     </el-form>
     <template #footer>
       <el-button @click="visible = false">Cancel</el-button>
-      <el-button type="primary" @click="submitResetPassword">Reset</el-button>
+      <el-button type="primary" :loading="submitting" :disabled="submitting" @click="submitResetPassword">Reset</el-button>
     </template>
   </el-dialog>
 </template>
@@ -24,6 +24,7 @@ import { extractError } from '@/utils/apiError'
 const emit = defineEmits(['reset'])
 
 const visible = ref(false)
+const submitting = ref(false)
 const targetUser = ref(null)
 const form = ref({ password: '', note: '' })
 const resetFormRef = ref(null)
@@ -65,6 +66,7 @@ const open = user => {
 }
 
 const submitResetPassword = async () => {
+  if (submitting.value) return
   if (!targetUser.value) {
     return
   }
@@ -72,6 +74,7 @@ const submitResetPassword = async () => {
   const valid = await resetFormRef.value?.validate().catch(() => false)
   if (!valid) return
 
+  submitting.value = true
   try {
     const data = await resetUserPassword(targetUser.value.id, {
       new_password: form.value.password,
@@ -90,6 +93,8 @@ const submitResetPassword = async () => {
     ElMessage.error(data?.error || 'Failed to reset password.')
   } catch (error) {
     ElMessage.error(extractError(error, 'Failed to reset password.'))
+  } finally {
+    submitting.value = false
   }
 }
 

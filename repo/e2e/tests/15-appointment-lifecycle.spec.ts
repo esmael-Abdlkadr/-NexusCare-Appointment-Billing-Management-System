@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { apiGet, apiPost, apiToken } from '../helpers/api'
+import { apiGet, apiPost, apiTokenAsAdmin, apiTokenAsStaff } from '../helpers/api'
 import { loginAsAdmin, loginAsStaff } from '../helpers/auth'
 
 const filterByStatus = async (page, status: string) => {
@@ -14,7 +14,7 @@ const filterByStatus = async (page, status: string) => {
 // Reusable helper to seed a fresh appointment in 'requested' status.
 // Uses a far-future day + unique hour derived from Date.now() to avoid conflicts.
 const seedRequestedAppointment = async (request) => {
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })
   const resources = await apiGet(request, staffToken, '/resources')
@@ -67,8 +67,8 @@ test('lifecycle: admin confirms a requested appointment', async ({ page, request
 // ── 2. confirmed → checked_in ───────────────────────────────────────────────
 // Seeds a fresh confirmed appointment so this test is self-contained.
 test('lifecycle: staff checks in a confirmed appointment', async ({ page, request }) => {
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
+  const adminToken = await apiTokenAsAdmin(request)
 
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })
@@ -123,8 +123,8 @@ test('lifecycle: staff checks in a confirmed appointment', async ({ page, reques
 // ── 3. checked_in → completed ───────────────────────────────────────────────
 // Seeds its own checked-in appointment via API for self-contained execution.
 test('lifecycle: staff completes a checked-in appointment', async ({ page, request }) => {
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
+  const adminToken = await apiTokenAsAdmin(request)
 
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })
@@ -182,8 +182,8 @@ test('lifecycle: staff completes a checked-in appointment', async ({ page, reque
 // ── 4. confirmed → no_show ──────────────────────────────────────────────────
 // No Show is valid from 'confirmed' per the backend state machine.
 test('lifecycle: staff marks a confirmed appointment as no-show', async ({ page, request }) => {
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
+  const adminToken = await apiTokenAsAdmin(request)
 
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })
@@ -246,8 +246,8 @@ test('lifecycle: staff marks a confirmed appointment as no-show', async ({ page,
 // ── 5. Status filter changes table content ───────────────────────────────────
 // Seeds a fresh confirmed appointment via API so the filter test has guaranteed data.
 test('status filter: selecting confirmed shows only confirmed rows', async ({ page, request }) => {
-  const staffToken = await apiToken(request, 'staff1', 'Staff@NexusCare1')
-  const adminToken = await apiToken(request, 'admin', 'Admin@NexusCare1')
+  const staffToken = await apiTokenAsStaff(request)
+  const adminToken = await apiTokenAsAdmin(request)
 
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
   const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })

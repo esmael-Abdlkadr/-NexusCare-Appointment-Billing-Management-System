@@ -43,7 +43,7 @@ test('create user with valid data succeeds and can be deleted', async ({ page })
   await page.getByRole('button', { name: /create user/i }).click()
   await page.locator('.el-dialog .el-form-item').filter({ hasText: 'Identifier' }).locator('input').fill(identifier)
   await page.locator('.el-dialog .el-form-item').filter({ hasText: 'Email' }).locator('input').fill('e2e@test.com')
-  await page.locator('.el-dialog .el-form-item').filter({ hasText: 'Password' }).locator('input').first().fill('Temp@NexusCare12')
+  await page.locator('.el-dialog .el-form-item').filter({ hasText: 'Password' }).locator('input').first().fill(process.env.E2E_TEMP_PASS || (() => { throw new Error('Missing required env var E2E_TEMP_PASS') })())
   await page.getByRole('button', { name: /^create$/i }).last().click()
   await expect(page.locator('.el-message')).toBeVisible({ timeout: 10000 })
 

@@ -34,6 +34,19 @@ E2E_RAN=false
 if [ -d "$SCRIPT_DIR/e2e" ] && command -v npm &> /dev/null; then
     cd "$SCRIPT_DIR/e2e"
 
+    # One-command test mode: provide deterministic defaults that match seeded demo users.
+    export E2E_ADMIN_USER="${E2E_ADMIN_USER:-admin}"
+    export E2E_ADMIN_PASS="${E2E_ADMIN_PASS:-Admin@NexusCare1}"
+    export E2E_STAFF_USER="${E2E_STAFF_USER:-staff1}"
+    export E2E_STAFF_PASS="${E2E_STAFF_PASS:-Staff@NexusCare1}"
+    export E2E_REVIEWER_USER="${E2E_REVIEWER_USER:-reviewer1}"
+    export E2E_REVIEWER_PASS="${E2E_REVIEWER_PASS:-Reviewer@NexusCare1}"
+    export E2E_BANNED_USER="${E2E_BANNED_USER:-banned_user}"
+    export E2E_BANNED_PASS="${E2E_BANNED_PASS:-Banned@NexusCare1}"
+    export E2E_MUTED_USER="${E2E_MUTED_USER:-muted_user}"
+    export E2E_MUTED_PASS="${E2E_MUTED_PASS:-Muted@NexusCare1}"
+    export E2E_TEMP_PASS="${E2E_TEMP_PASS:-Temp@NexusCare123}"
+
     # Keep one-command behavior: bootstrap E2E deps when missing.
     if [ ! -d "node_modules" ]; then
         echo "E2E dependencies not found; installing with npm ci..."
