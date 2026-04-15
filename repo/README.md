@@ -1,158 +1,92 @@
-# NexusCare — Appointment & Billing Management System
+# NexusCare Appointment & Billing Management System
 
-Multi-department appointment scheduling, offline billing, and financial reconciliation system with role-based access control.
+A full-stack healthcare operations platform for appointment scheduling, billing, reconciliation, and role-based workflow control across staff, reviewers, and administrators.
 
----
+## Architecture & Tech Stack
 
-## Quick Start
+* **Frontend:** Vue 3, Vite, Element Plus, Pinia
+* **Backend:** PHP 8.2, Laravel 11, Nginx/PHP-FPM
+* **Database:** MySQL 8.0
+* **Containerization:** Docker & Docker Compose (Required)
 
-```bash
-docker compose up -d --build
+## Project Structure
+
+*Below is a sample project structure*
+
+```text
+.
+├── backend/                # Backend source code and Dockerfile
+├── frontend/               # Frontend source code and Dockerfile
+├── e2e/                    # Playwright end-to-end tests
+├── backend/.env.example    # Example backend environment variables
+├── docker-compose.yml      # Multi-container orchestration - MANDATORY
+├── run_tests.sh            # Standardized test execution script - MANDATORY
+└── README.md               # Project documentation - MANDATORY
 ```
 
-That is the only command needed. The backend container automatically:
-1. Generates `APP_KEY` and `JWT_SECRET` on first start (no `.env` required)
-2. Runs `php artisan migrate --force`
-3. Seeds all reference and demo data (admin users, test fixtures, demo data)
+## Prerequisites
 
-Wait ~30 seconds for MySQL to initialize and migrations to complete, then open:
-- **Frontend:** http://localhost:80
-- **Backend API:** http://localhost:8000/api/health
+To ensure a consistent environment, this project is designed to run entirely within containers. You must have the following installed:
+* [Docker](https://docs.docker.com/get-docker/)
+* [Docker Compose](https://docs.docker.com/compose/install/)
 
-> **Note:** Seeders are skipped on subsequent container restarts if the database already
-> contains users, making restarts safe and fast.
+## Running the Application
 
----
+1. **Build and Start Containers:**
+   Use Docker Compose to build the images and spin up the entire stack in detached mode.
+   ```bash
+   docker compose up --build -d
+   ```
 
-## Service URLs
+2. **Environment Setup:**
+   This project can boot without manual `.env` creation because startup scripts generate runtime secrets and run migrations/seeding automatically.
+   If you need local customization, you can copy the backend example file:
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
 
-| Service  | URL                          |
-|----------|------------------------------|
-| Frontend | http://localhost:80           |
-| Backend API | http://localhost:8000/api  |
-| Health check | http://localhost:8000/api/health |
-| MySQL    | localhost:3306               |
+3. **Access the App:**
+   * Frontend: `http://localhost:80`
+   * Backend API: `http://localhost:8000/api`
+   * Health endpoint: `http://localhost:8000/api/health`
 
----
+4. **Stop the Application:**
+   ```bash
+   docker compose down -v
+   ```
 
-## Frontend — Local Development
+## Testing
 
-To build or test the frontend without Docker, use the **repository root** — the directory that contains `docker-compose.yml`, `frontend/`, `backend/`, and `e2e/` (not a parent `full_stack/` folder):
+All unit, integration, and E2E tests are executed via a single, standardized shell script. This script automatically handles required test execution steps.
 
-```bash
-cd frontend
-
-npm install
-npm run dev      # Start local Vite dev server (proxies API to http://localhost:8000)
-npm run build    # Production build -> dist/
-npm run test     # Run Vitest unit tests
-```
-
-E2E tests require the full Docker stack to be running at `http://localhost:80` (frontend) and `http://localhost:8000` (backend API). Run the stack first if not already up:
+Make sure the script is executable, then run it:
 
 ```bash
-# Step 1 — start the Docker stack (from repo root; skip if already running)
-docker compose up -d --build
-
-# Step 2 — verify both services are reachable before running E2E
-curl -sf http://localhost:80 > /dev/null && echo "Frontend OK" || echo "Frontend NOT reachable — start Docker first"
-curl -sf http://localhost:8000/api/health > /dev/null && echo "Backend OK"  || echo "Backend NOT reachable — start Docker first"
-
-# Step 3 — run E2E tests (only after both checks show OK)
-cd e2e
-npm install
-npx playwright install chromium
-npx playwright test
+chmod +x run_tests.sh
+./run_tests.sh
 ```
 
----
+*Note: The `run_tests.sh` script returns standard exit codes (`0` for success, non-zero for failure), which is suitable for CI/CD validators.*
 
-## Login Credentials
+## Seeded Credentials
 
-Demo users are created by the database seeder on first start. Credentials are **not** committed to the repository.
+The database is pre-seeded with the following test users on startup. Use these credentials to verify authentication and role-based access controls.
 
-To log in locally, check the seeder output or ask your team lead for the current demo passwords.
+| Role | Identifier | Password | Notes |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin` | `Admin@NexusCare1` | Full access to all modules and admin functions. |
+| **Staff** | `staff1` | `Staff@NexusCare1` | Operational staff permissions (appointments/payments/waitlist). |
+| **Reviewer** | `reviewer1` | `Reviewer@NexusCare1` | Review and approval permissions (waivers/reconciliation/reports). |
 
-### E2E Test Credentials
+## Optional E2E Environment Variables
 
-E2E tests read credentials from environment variables. Create a local `.env` file in the `e2e/` directory (gitignored) or export them in your shell before running tests:
+If you run E2E tests manually, set:
 
 ```bash
 export E2E_ADMIN_USER=admin
-export E2E_ADMIN_PASS=<your-seeded-admin-password>
+export E2E_ADMIN_PASS=Admin@NexusCare1
 export E2E_STAFF_USER=staff1
-export E2E_STAFF_PASS=<your-seeded-staff-password>
+export E2E_STAFF_PASS=Staff@NexusCare1
 export E2E_REVIEWER_USER=reviewer1
-export E2E_REVIEWER_PASS=<your-seeded-reviewer-password>
+export E2E_REVIEWER_PASS=Reviewer@NexusCare1
 ```
-
-If any of these variables are missing, the E2E suite will fail immediately with a clear error message.
-
----
-
-## Role Permissions
-
-| Feature                  | Staff | Reviewer | Administrator |
-|--------------------------|-------|----------|---------------|
-| Create/reschedule appointments | ✅ | ❌ | ✅ |
-| Confirm appointments     | ✅    | ❌       | ✅            |
-| View waitlist            | ✅    | ❌       | ✅            |
-| Manage waitlist (add/remove/backfill) | ✅ | ❌ | ✅ |
-| Post payments            | ✅    | ❌       | ✅            |
-| Approve waivers          | ❌    | ✅       | ✅            |
-| Import reconciliation CSV| ❌    | ✅       | ✅            |
-| Resolve exceptions       | ❌    | ✅       | ✅            |
-| Acknowledge anomalies    | ❌    | ✅       | ✅            |
-| User management          | ❌    | ❌       | ✅            |
-| Account moderation (ban/mute) | ❌ | ❌    | ✅            |
-| Recycle bin              | ❌    | ❌       | ✅            |
-| Export reports           | ❌    | ✅       | ✅            |
-| View audit logs          | ❌    | ✅       | ✅            |
-| Fee rule management      | ❌    | ❌       | ✅            |
-| View ledger              | ❌    | ❌       | ✅            |
-
----
-
-## Tech Stack
-
-| Layer      | Technology                          |
-|------------|-------------------------------------|
-| Frontend   | Vue 3 + Vite + Element Plus + Pinia |
-| Backend    | PHP 8.2 + Laravel 11                |
-| Database   | MySQL 8.0                           |
-| Auth       | JWT HS256 (HttpOnly cookie)         |
-| Container  | Docker Compose                      |
-
----
-
-## Run Tests
-
-```bash
-# Strict mode (default): fails if E2E dependencies are not installed
-bash run_tests.sh
-
-# Non-strict mode: backend tests pass even if E2E is skipped
-bash run_tests.sh --allow-skip-e2e
-```
-
-`run_tests.sh` runs backend unit+feature tests (via Docker) and then Playwright E2E tests. In strict mode (default), a skipped E2E suite causes a non-zero exit and prints a clear `PARTIAL RUN` message. Use `--allow-skip-e2e` only in CI environments where E2E dependencies cannot be installed.
-
-Or run backend tests individually:
-
-```bash
-# Unit tests
-docker exec nexuscare-backend php artisan test --testsuite=Unit
-
-# Feature tests
-docker exec nexuscare-backend php artisan test --testsuite=Feature
-```
-
----
-
-## Container Names
-
-| Container           | Role              |
-|---------------------|-------------------|
-| `nexuscare-backend` | PHP-FPM + Nginx   |
-| `nexuscare-frontend`| Vue (Nginx static)|
-| `nexuscare-mysql`   | MySQL 8.0         |
