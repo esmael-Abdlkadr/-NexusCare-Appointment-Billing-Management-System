@@ -1,10 +1,13 @@
 # Test Coverage Audit
 
-## Project Type Detection
-- README top does **not** explicitly declare one of the required canonical labels (`backend`, `fullstack`, `web`, `android`, `ios`, `desktop`).
-- Inferred type by light inspection: **fullstack** (Vue frontend at `repo/frontend`, Laravel API at `repo/backend`, E2E at `repo/e2e`).
+## Scope and method
+- Audit type: static inspection only (no test execution, no scripts/app startup).
+- Inspected sources: `repo/backend/routes/api.php`, backend test files under `repo/backend/tests`, E2E tests under `repo/e2e/tests`, frontend unit tests under `repo/frontend/src/__tests__`, and `repo/run_tests.sh`.
+- Project type declaration: `fullstack` declared in `repo/README.md:3`.
 
 ## Backend Endpoint Inventory
+
+Resolved API prefix: `/api` (all routes defined in `repo/backend/routes/api.php` and referenced as `/api/...` throughout tests).
 
 1. `GET /api/health`
 2. `POST /api/auth/login`
@@ -66,196 +69,239 @@
 
 | Endpoint | Covered | Test type | Test files | Evidence |
 |---|---|---|---|---|
-| `GET /api/health` | yes | true no-mock HTTP | `backend/tests/Feature/HealthTest.php` | `backend/tests/Feature/HealthTest.php::test_health_check_returns_ok` |
-| `POST /api/auth/login` | yes | true no-mock HTTP | `backend/tests/Feature/AuthTest.php`, `backend/tests/Feature/AdminTest.php` | `backend/tests/Feature/AuthTest.php::test_login_success` |
-| `POST /api/auth/logout` | yes | true no-mock HTTP | `backend/tests/Feature/AuthTest.php` | `backend/tests/Feature/AuthTest.php::test_logout_invalidates_session` |
-| `GET /api/auth/me` | yes | true no-mock HTTP | `backend/tests/Feature/AuthTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `backend/tests/Feature/AuthTest.php::test_idle_timeout` |
-| `POST /api/admin/users/{user}/reset-password` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php` | `backend/tests/Feature/AdminUserManagementTest.php::test_admin_can_reset_password` |
-| `GET /api/admin/users` | yes | true no-mock HTTP | `backend/tests/Feature/AdminTest.php`, `backend/tests/Feature/AdminUserManagementTest.php` | `backend/tests/Feature/AdminTest.php::test_government_id_masked_for_reviewer` |
-| `POST /api/admin/users` | yes | true no-mock HTTP | `backend/tests/Feature/AdminTest.php` | `backend/tests/Feature/AdminTest.php::test_admin_can_create_user_with_department` |
-| `GET /api/admin/users/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AdminTest.php` | `backend/tests/Feature/AdminTest.php::test_government_id_unmasked_for_admin` |
-| `PATCH /api/admin/users/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AdminTest.php` | `backend/tests/Feature/AdminTest.php::test_admin_can_ban_user` |
-| `DELETE /api/admin/users/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php`, `backend/tests/Feature/AdminUserManagementTest.php` | `backend/tests/Feature/RecycleBinTest.php::test_admin_can_restore_soft_deleted_user` |
-| `POST /api/admin/users/bulk` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php` | `backend/tests/Feature/AdminUserManagementTest.php::test_bulk_ban` |
-| `POST /api/admin/users/{id}/unlock` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php` | `backend/tests/Feature/AdminUserManagementTest.php::test_admin_can_unlock_user` |
-| `GET /api/admin/recycle-bin` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php` | `backend/tests/Feature/RecycleBinTest.php::test_admin_can_restore_soft_deleted_user` |
-| `POST /api/admin/recycle-bin/{type}/{id}/restore` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php`, `backend/tests/Feature/AdminTest.php` | `backend/tests/Feature/RecycleBinTest.php::test_admin_can_restore_soft_deleted_user` |
-| `DELETE /api/admin/recycle-bin/{type}/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php` | `backend/tests/Feature/RecycleBinTest.php::test_admin_can_force_delete_from_recycle_bin` |
-| `POST /api/admin/recycle-bin/bulk-restore` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php` | `backend/tests/Feature/RecycleBinTest.php::test_admin_can_bulk_restore_multiple_users` |
-| `DELETE /api/admin/recycle-bin/bulk` | no | unit-only / indirect | - | - |
-| `GET /api/appointments` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php`, `backend/tests/Feature/AppointmentTest.php` | `backend/tests/Feature/AppointmentCrudTest.php::test_staff_can_list_appointments` |
-| `POST /api/appointments` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php`, `backend/tests/Feature/AppointmentTest.php` | `backend/tests/Feature/AppointmentCrudTest.php::test_full_appointment_lifecycle_requested_to_completed` |
-| `GET /api/appointments/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php` | `backend/tests/Feature/AppointmentCrudTest.php::test_staff_can_view_appointment` |
-| `PUT /api/appointments/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php` | `backend/tests/Feature/AppointmentCrudTest.php::test_staff_can_update_appointment_schedule` |
-| `PATCH /api/appointments/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrossSiteTest.php` | `backend/tests/Feature/AppointmentCrossSiteTest.php::test_staff_cannot_patch_cross_site_appointment` |
-| `PATCH /api/appointments/{id}/status` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistTest.php`, `backend/tests/Feature/AppointmentTest.php` | `backend/tests/Feature/WaitlistTest.php::test_backfill_proposed_on_cancellation` |
-| `GET /api/appointments/{id}/versions` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php` | `backend/tests/Feature/AppointmentCrudTest.php::test_reviewer_can_list_appointment_versions` |
-| `GET /api/resources` | yes | true no-mock HTTP | `backend/tests/Feature/ResourceTest.php`, `e2e/tests/02-appointments.spec.ts` | `backend/tests/Feature/ResourceTest.php::test_any_authenticated_user_can_list_resources` |
-| `GET /api/users/search` | yes | true no-mock HTTP | `backend/tests/Feature/UserSearchTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `backend/tests/Feature/UserSearchTest.php::test_staff_can_search_users_by_identifier` |
-| `GET /api/waitlist` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistTest.php` | `backend/tests/Feature/WaitlistTest.php::test_waitlist_index_returns_paginated_envelope` |
-| `POST /api/waitlist` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistTest.php`, `e2e/tests/03-waitlist.spec.ts` | `backend/tests/Feature/WaitlistTest.php::test_add_to_waitlist` |
-| `POST /api/waitlist/{id}/confirm-backfill` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistTest.php` | `backend/tests/Feature/WaitlistTest.php::test_confirm_backfill_creates_appointment` |
-| `DELETE /api/waitlist/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistDestroyTest.php` | `backend/tests/Feature/WaitlistDestroyTest.php::test_staff_can_remove_waitlist_entry` |
-| `GET /api/fee-rules` | yes | true no-mock HTTP | `backend/tests/Feature/FeeRuleTest.php` | `backend/tests/Feature/FeeRuleTest.php::test_admin_can_list_fee_rules` |
-| `POST /api/fee-rules` | yes | true no-mock HTTP | `backend/tests/Feature/FeeRuleTest.php` | `backend/tests/Feature/FeeRuleTest.php::test_admin_can_create_fee_rule` |
-| `DELETE /api/fee-rules/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/FeeRuleTest.php` | `backend/tests/Feature/FeeRuleTest.php::test_admin_can_delete_fee_rule` |
-| `GET /api/fee-assessments` | yes | true no-mock HTTP | `backend/tests/Feature/FeeAssessmentCrudTest.php`, `e2e/tests/04-fee-assessments.spec.ts` | `backend/tests/Feature/FeeAssessmentCrudTest.php::test_staff_can_list_fee_assessments` |
-| `POST /api/fee-assessments` | yes | true no-mock HTTP | `backend/tests/Feature/BillingTest.php`, `backend/tests/Feature/LostDamagedFeeTest.php` | `backend/tests/Feature/LostDamagedFeeTest.php::test_staff_can_assess_lost_damaged_fee` |
-| `GET /api/fee-assessments/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/FeeAssessmentCrudTest.php` | `backend/tests/Feature/FeeAssessmentCrudTest.php::test_staff_can_view_fee_assessment` |
-| `POST /api/fee-assessments/{id}/waiver` | yes | true no-mock HTTP | `backend/tests/Feature/BillingTest.php`, `backend/tests/Feature/FeeAssessmentCrudTest.php` | `backend/tests/Feature/BillingTest.php::test_reviewer_approves_waiver` |
-| `GET /api/fees` | no | unit-only / indirect | - | - |
-| `POST /api/fees/{id}/write-off` | yes | true no-mock HTTP | `backend/tests/Feature/FeeAssessmentCrudTest.php` | `backend/tests/Feature/FeeAssessmentCrudTest.php::test_reviewer_can_write_off_fee` |
-| `GET /api/payments` | yes | true no-mock HTTP | `backend/tests/Feature/PaymentListTest.php`, `backend/tests/Feature/PaymentTest.php` | `backend/tests/Feature/PaymentListTest.php::test_list_payments_returns_paginated_data` |
-| `POST /api/payments` | yes | true no-mock HTTP | `backend/tests/Feature/BillingTest.php`, `backend/tests/Feature/PaymentTest.php` | `backend/tests/Feature/BillingTest.php::test_post_payment_marks_fee_paid` |
-| `GET /api/refund-orders` | yes | true no-mock HTTP | `backend/tests/Feature/RefundOrderTest.php` | `backend/tests/Feature/RefundOrderTest.php::test_staff_can_list_refund_orders` |
-| `POST /api/refund-orders` | yes | true no-mock HTTP | `backend/tests/Feature/RefundOrderTest.php` | `backend/tests/Feature/RefundOrderTest.php::test_staff_can_create_refund_order` |
-| `PATCH /api/refund-orders/{id}/approve` | yes | true no-mock HTTP | `backend/tests/Feature/RefundOrderTest.php` | `backend/tests/Feature/RefundOrderTest.php::test_reviewer_can_approve_refund_order` |
-| `GET /api/ledger` | yes | true no-mock HTTP | `backend/tests/Feature/LedgerTest.php`, `e2e/tests/05-ledger.spec.ts` | `backend/tests/Feature/LedgerTest.php::test_admin_can_view_ledger` |
-| `POST /api/reconciliation/import` | yes | HTTP with mocking | `backend/tests/Feature/ReconciliationTest.php`, `backend/tests/Feature/LoggingTest.php` | `backend/tests/Feature/ReconciliationTest.php::test_import_settlement_csv` |
-| `GET /api/reconciliation/imports` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationCrudTest.php` | `backend/tests/Feature/ReconciliationCrudTest.php::test_reviewer_can_list_imports` |
-| `GET /api/reconciliation/exceptions` | no | unit-only / indirect | - | - |
-| `PATCH /api/reconciliation/exceptions/{id}/resolve` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `backend/tests/Feature/ReconciliationTest.php::test_reviewer_resolves_exception` |
-| `GET /api/reconciliation/anomalies` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationCrudTest.php` | `backend/tests/Feature/ReconciliationCrudTest.php::test_reviewer_can_list_anomalies` |
-| `PATCH /api/reconciliation/anomalies/{id}/acknowledge` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationCrudTest.php` | `backend/tests/Feature/ReconciliationCrudTest.php::test_reviewer_can_acknowledge_anomaly` |
-| `GET /api/audit-logs` | yes | true no-mock HTTP | `backend/tests/Feature/AuditLogTest.php` | `backend/tests/Feature/AuditLogTest.php::test_reviewer_can_list_audit_logs` |
-| `GET /api/reports/appointments` | yes | true no-mock HTTP | `backend/tests/Feature/ReportTest.php` | `backend/tests/Feature/ReportTest.php::test_reviewer_can_get_appointment_report` |
-| `GET /api/reports/financial` | yes | true no-mock HTTP | `backend/tests/Feature/ReportTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `backend/tests/Feature/ReportTest.php::test_reviewer_can_get_financial_report` |
-| `GET /api/reports/audit` | yes | true no-mock HTTP | `backend/tests/Feature/ReportTest.php` | `backend/tests/Feature/ReportTest.php::test_admin_can_get_audit_report` |
+| `GET /api/health` | yes | true no-mock HTTP | `backend/tests/Feature/HealthTest.php` | `HealthTest.php:14` (`getJson('/api/health')`) |
+| `POST /api/auth/login` | yes | true no-mock HTTP (also HTTP-with-mocking cases exist) | `backend/tests/Feature/AuthTest.php`, `backend/tests/Feature/LoggingTest.php` | `AuthTest.php:24`; mocked variant `LoggingTest.php:67` |
+| `POST /api/auth/logout` | yes | true no-mock HTTP | `backend/tests/Feature/AuthTest.php` | `AuthTest.php:101` |
+| `GET /api/auth/me` | yes | true no-mock HTTP | `backend/tests/Feature/AuthTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `AuthTest.php:78`; `SecurityIsolationTest.php:115` |
+| `POST /api/admin/users/{user}/reset-password` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php` | `AdminUserManagementTest.php:604` |
+| `GET /api/admin/users` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `AdminUserManagementTest.php:32`; `SecurityIsolationTest.php:169` |
+| `POST /api/admin/users` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php`, `backend/tests/Feature/AdminTest.php` | `AdminUserManagementTest.php:165`; `AdminTest.php:81` |
+| `GET /api/admin/users/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php`, `backend/tests/Feature/AdminTest.php` | `AdminUserManagementTest.php:274`; `AdminTest.php:96` |
+| `PATCH /api/admin/users/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php`, `backend/tests/Feature/AdminTest.php` | `AdminUserManagementTest.php:344`; `AdminTest.php:27` |
+| `DELETE /api/admin/users/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php`, `backend/tests/Feature/AdminTest.php` | `AdminUserManagementTest.php:387`; `AdminTest.php:63` |
+| `POST /api/admin/users/bulk` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php` | `AdminUserManagementTest.php:418` |
+| `POST /api/admin/users/{id}/unlock` | yes | true no-mock HTTP | `backend/tests/Feature/AdminUserManagementTest.php` | `AdminUserManagementTest.php:578` |
+| `GET /api/admin/recycle-bin` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php`, `backend/tests/Feature/AdminUserManagementTest.php` | `RecycleBinTest.php:99`; `AdminUserManagementTest.php:784` |
+| `POST /api/admin/recycle-bin/{type}/{id}/restore` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php`, `backend/tests/Feature/AdminTest.php` | `RecycleBinTest.php:32`; `AdminTest.php:69` |
+| `DELETE /api/admin/recycle-bin/{type}/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php`, `backend/tests/Feature/AdminUserManagementTest.php` | `RecycleBinTest.php:88`; `AdminUserManagementTest.php:795` |
+| `POST /api/admin/recycle-bin/bulk-restore` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php` | `RecycleBinTest.php:149` |
+| `DELETE /api/admin/recycle-bin/bulk` | yes | true no-mock HTTP | `backend/tests/Feature/RecycleBinTest.php` | `RecycleBinTest.php:186` |
+| `GET /api/appointments` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php`, `backend/tests/Feature/AuthTest.php` | `AppointmentCrudTest.php:49`; `AuthTest.php:140` |
+| `POST /api/appointments` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentTest.php`, `backend/tests/Feature/AppointmentCrudTest.php` | `AppointmentTest.php:29`; `AppointmentCrudTest.php:176` |
+| `GET /api/appointments/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php`, `backend/tests/Feature/AppointmentTest.php` | `AppointmentCrudTest.php:82`; `AppointmentTest.php:182` |
+| `PUT /api/appointments/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php` | `AppointmentCrudTest.php:103` |
+| `PATCH /api/appointments/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php`, `backend/tests/Feature/AppointmentTest.php` | `AppointmentCrudTest.php:263`; `AppointmentTest.php:194` |
+| `PATCH /api/appointments/{id}/status` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php`, `backend/tests/Feature/WaitlistTest.php` | `AppointmentCrudTest.php:190`; `WaitlistTest.php:71` |
+| `GET /api/appointments/{id}/versions` | yes | true no-mock HTTP | `backend/tests/Feature/AppointmentCrudTest.php` | `AppointmentCrudTest.php:144` |
+| `GET /api/resources` | yes | true no-mock HTTP | `backend/tests/Feature/ResourceTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `ResourceTest.php:28`; `SecurityIsolationTest.php:548` |
+| `GET /api/users/search` | yes | true no-mock HTTP | `backend/tests/Feature/UserSearchTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `UserSearchTest.php:31`; `SecurityIsolationTest.php:200` |
+| `GET /api/waitlist` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `WaitlistTest.php:121`; `SecurityIsolationTest.php:437` |
+| `POST /api/waitlist` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistTest.php` | `WaitlistTest.php:32` |
+| `POST /api/waitlist/{id}/confirm-backfill` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistTest.php` | `WaitlistTest.php:101` |
+| `DELETE /api/waitlist/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/WaitlistDestroyTest.php`, `backend/tests/Feature/DepartmentIsolationTest.php` | `WaitlistDestroyTest.php:45`; `DepartmentIsolationTest.php:234` |
+| `GET /api/fee-rules` | yes | true no-mock HTTP | `backend/tests/Feature/FeeRuleTest.php` | `FeeRuleTest.php:29` |
+| `POST /api/fee-rules` | yes | true no-mock HTTP | `backend/tests/Feature/FeeRuleTest.php` | `FeeRuleTest.php:57` |
+| `DELETE /api/fee-rules/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/FeeRuleTest.php` | `FeeRuleTest.php:107` |
+| `GET /api/fee-assessments` | yes | true no-mock HTTP | `backend/tests/Feature/FeeAssessmentCrudTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `FeeAssessmentCrudTest.php:45`; `SecurityIsolationTest.php:396` |
+| `POST /api/fee-assessments` | yes | true no-mock HTTP | `backend/tests/Feature/LostDamagedFeeTest.php` | `LostDamagedFeeTest.php:32` |
+| `GET /api/fee-assessments/{id}` | yes | true no-mock HTTP | `backend/tests/Feature/FeeAssessmentCrudTest.php` | `FeeAssessmentCrudTest.php:78` |
+| `POST /api/fee-assessments/{id}/waiver` | yes | true no-mock HTTP | `backend/tests/Feature/FeeAssessmentCrudTest.php`, `backend/tests/Feature/BillingTest.php` | `FeeAssessmentCrudTest.php:97`; `BillingTest.php:148` |
+| `GET /api/fees` | yes | true no-mock HTTP | `backend/tests/Feature/FeeAssessmentCrudTest.php` | `FeeAssessmentCrudTest.php:147` |
+| `POST /api/fees/{id}/write-off` | yes | true no-mock HTTP | `backend/tests/Feature/FeeAssessmentCrudTest.php` | `FeeAssessmentCrudTest.php:116` |
+| `GET /api/payments` | yes | true no-mock HTTP | `backend/tests/Feature/PaymentListTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `PaymentListTest.php:42`; `SecurityIsolationTest.php:282` |
+| `POST /api/payments` | yes | true no-mock HTTP | `backend/tests/Feature/PaymentTest.php`, `backend/tests/Feature/BillingTest.php` | `PaymentTest.php:45`; `BillingTest.php:100` |
+| `GET /api/refund-orders` | yes | true no-mock HTTP | `backend/tests/Feature/RefundOrderTest.php` | `RefundOrderTest.php:59` |
+| `POST /api/refund-orders` | yes | true no-mock HTTP | `backend/tests/Feature/RefundOrderTest.php` | `RefundOrderTest.php:83` |
+| `PATCH /api/refund-orders/{id}/approve` | yes | true no-mock HTTP | `backend/tests/Feature/RefundOrderTest.php` | `RefundOrderTest.php:134` |
+| `GET /api/ledger` | yes | true no-mock HTTP | `backend/tests/Feature/LedgerTest.php` | `LedgerTest.php:41` |
+| `POST /api/reconciliation/import` | yes | true no-mock HTTP (also HTTP-with-mocking cases exist) | `backend/tests/Feature/ReconciliationTest.php`, `backend/tests/Feature/LoggingTest.php` | `ReconciliationTest.php:49`; mocked variant `LoggingTest.php:123` |
+| `GET /api/reconciliation/imports` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationCrudTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `ReconciliationCrudTest.php:70`; `SecurityIsolationTest.php:647` |
+| `GET /api/reconciliation/exceptions` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationCrudTest.php` | `ReconciliationCrudTest.php:154` |
+| `PATCH /api/reconciliation/exceptions/{id}/resolve` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `ReconciliationTest.php:130`; `SecurityIsolationTest.php:343` |
+| `GET /api/reconciliation/anomalies` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationCrudTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `ReconciliationCrudTest.php:103`; `SecurityIsolationTest.php:720` |
+| `PATCH /api/reconciliation/anomalies/{id}/acknowledge` | yes | true no-mock HTTP | `backend/tests/Feature/ReconciliationCrudTest.php` | `ReconciliationCrudTest.php:122` |
+| `GET /api/audit-logs` | yes | true no-mock HTTP | `backend/tests/Feature/AuditLogTest.php` | `AuditLogTest.php:44` |
+| `GET /api/reports/appointments` | yes | true no-mock HTTP | `backend/tests/Feature/ReportTest.php` | `ReportTest.php:31` |
+| `GET /api/reports/financial` | yes | true no-mock HTTP | `backend/tests/Feature/ReportTest.php`, `backend/tests/Feature/SecurityIsolationTest.php` | `ReportTest.php:58`; `SecurityIsolationTest.php:100` |
+| `GET /api/reports/audit` | yes | true no-mock HTTP | `backend/tests/Feature/ReportTest.php` | `ReportTest.php:131` |
 
 ## API Test Classification
 
-### 1) True No-Mock HTTP
-- Laravel feature tests using HTTP helpers against real routes (e.g., `backend/tests/Feature/AuthTest.php::test_logout_invalidates_session`, `backend/tests/Feature/AppointmentCrudTest.php::test_staff_can_update_appointment_schedule`).
-- Playwright API/browser E2E calls through HTTP stack (e.g., `e2e/tests/15-appointment-lifecycle.spec.ts`, `e2e/tests/03-waitlist.spec.ts`).
+1. **True No-Mock HTTP**
+   - Backend feature suites broadly exercise real HTTP entrypoints (examples: `backend/tests/Feature/AuthTest.php`, `backend/tests/Feature/AppointmentCrudTest.php`, `backend/tests/Feature/AdminUserManagementTest.php`, `backend/tests/Feature/ReportTest.php`).
+   - E2E API helper calls also use real HTTP requests (e.g., `e2e/helpers/api.ts:14-55`, `e2e/tests/15-appointment-lifecycle.spec.ts:35`, `e2e/tests/15-appointment-lifecycle.spec.ts:103`).
 
-### 2) HTTP with Mocking
-- `backend/tests/Feature/LoggingTest.php` (`Log::shouldReceive(...)`), including HTTP tests for `/api/auth/login` and `/api/reconciliation/import`.
-- `backend/tests/Feature/ReconciliationTest.php` (`Storage::fake('local')` in `csvFile()` helper), affecting import path tests.
+2. **HTTP with Mocking**
+   - `backend/tests/Feature/LoggingTest.php` uses `Log::shouldReceive(...)` in multiple tests (`LoggingTest.php:52`, `LoggingTest.php:76`, `LoggingTest.php:103`, `LoggingTest.php:145`) while still issuing HTTP requests.
+   - `e2e/tests/01-auth.spec.ts` intercepts `/api/auth/me` with `page.route(...).route.fulfill(...)` (`01-auth.spec.ts:47-52`), so that specific scenario does not hit the real backend route handler.
 
-### 3) Non-HTTP (unit/integration without HTTP)
-- Backend unit tests in `backend/tests/Unit/*.php` (6 files).
-- Frontend unit tests in `frontend/src/__tests__/*.js` (17 files, component/store/utils-level).
+3. **Non-HTTP (unit/integration without HTTP)**
+   - Backend unit tests: `backend/tests/Unit/*.php` (e.g., `FeeCalculationTest.php`, `ConflictDetectionTest.php`, `SyncServiceRuleTest.php`).
+   - Frontend unit tests: `frontend/src/__tests__/*.test.js` (component/store/router/composable tests via Vitest + Vue Test Utils).
 
 ## Mock Detection
-- **WHAT:** `Log` facade mocked via `shouldReceive`.
-  - **WHERE:** `backend/tests/Feature/LoggingTest.php:52`, `backend/tests/Feature/LoggingTest.php:76`, `backend/tests/Feature/LoggingTest.php:103`, `backend/tests/Feature/LoggingTest.php:145`.
-- **WHAT:** Filesystem/storage faked.
-  - **WHERE:** `backend/tests/Feature/ReconciliationTest.php:325` (`Storage::fake('local')`).
-- **WHAT:** Frontend service/router/http mocks (`vi.mock`, `vi.spyOn`).
-  - **WHERE:** `frontend/src/__tests__/WaitlistView.test.js:15`, `frontend/src/__tests__/PaymentPost.test.js:12`, `frontend/src/__tests__/authStore.test.js:4`, `frontend/src/__tests__/Login.test.js:10`.
+
+- **Laravel facade mocking**: `Log::shouldReceive(...)` in `repo/backend/tests/Feature/LoggingTest.php:52,55,76,79,103,104,145,148,154`.
+  - Mocked provider: logging channel/facade behavior.
+  - Impact: these tests are HTTP-with-mocking, not pure no-mock API behavior tests.
+
+- **Frontend/E2E HTTP interception**: `page.route('**/api/auth/me', ...)` in `repo/e2e/tests/01-auth.spec.ts:47-52`.
+  - Mocked layer: browser transport response for `/api/auth/me`.
+  - Impact: does not execute real backend handler for that test.
+
+- **Frontend unit mocking (non-API test layer)**: extensive `vi.mock(...)` across frontend tests, e.g. `repo/frontend/src/__tests__/AppointmentList.test.js:10`, `repo/frontend/src/__tests__/Login.test.js:10`, `repo/frontend/src/__tests__/authStore.test.js:4`.
 
 ## Coverage Summary
-- Total endpoints: **55**
-- Endpoints with HTTP tests: **52**
-- Endpoints with TRUE no-mock HTTP evidence: **51**
-- HTTP coverage: **94.55%** (`52/55`)
-- True API coverage: **92.73%** (`51/55`)
-- Uncovered endpoints:
-  - `DELETE /api/admin/recycle-bin/bulk`
-  - `GET /api/fees`
-  - `GET /api/reconciliation/exceptions`
+
+- Total backend API endpoints: **55**
+- Endpoints with HTTP tests: **55**
+- Endpoints with TRUE no-mock HTTP tests: **55**
+- HTTP coverage: **100%** (`55/55`)
+- True API coverage: **100%** (`55/55`)
 
 ## Unit Test Summary
 
 ### Backend Unit Tests
-- Test files: `backend/tests/Unit/SyncServiceRuleTest.php`, `backend/tests/Unit/ConflictDetectionTest.php`, `backend/tests/Unit/FeeCalculationTest.php`, `backend/tests/Unit/MaskingTest.php`, `backend/tests/Unit/IdentifierFormatRuleTest.php`, `backend/tests/Unit/PasswordComplexityTest.php`.
-- Modules covered (observed from file scope):
-  - services/rules: fee calculation, sync rules, conflict logic
-  - validation/security helpers: identifier/password/masking
-- Important backend modules NOT unit-tested directly:
-  - API controllers under `backend/app/Http/Controllers/Api/`
-  - auth/guard middleware behavior at pure-unit level (`app.jwt`, `scope.check`, `check.muted`, `audit.logger` are exercised mainly via feature tests)
-  - repository/data-access abstractions (no dedicated repository test layer found)
+- Unit test files: `ConflictDetectionTest.php`, `FeeCalculationTest.php`, `IdentifierFormatRuleTest.php`, `MaskingTest.php`, `PasswordComplexityTest.php`, `SyncServiceRuleTest.php`.
+- Modules covered:
+  - services: `FeeService`, `MaskingService`, `SyncService`
+  - repositories: `AppointmentRepository`, `AppointmentBillingRepository`
+  - validation rules: `IdentifierFormatRule`, `PasswordComplexityRule`
+- Important backend modules not directly unit-tested (only via feature/E2E or not evident):
+  - services: `AppointmentService`, `PaymentService`, `ReconciliationService`, `ReportService`, `WaitlistService`, `AdminUserService`, `RecycleBinService`, `UserSearchService`
+  - middleware/auth chain: `JwtAuth`, `ScopeCheck`, `RoleMiddleware`, `CheckMuted`, `AuditLoggerMiddleware`
+  - repositories with no direct unit suite: `PaymentRepository`, `RefundOrderRepository`, `LedgerEntryRepository`, `SettlementImportRepository`, `AnomalyAlertRepository`
 
 ### Frontend Unit Tests (STRICT REQUIREMENT)
-- Frontend test files: **PRESENT** in `frontend/src/__tests__/` (17 files).
-- Frameworks/tools detected:
-  - `vitest` (`import { ... } from 'vitest'`)
-  - `@vue/test-utils` (`mount`, `flushPromises`)
-  - `@pinia/testing`
+- Frontend test files present: **yes** (`repo/frontend/src/__tests__/*.test.js`, 20+ files).
+- Frameworks/tools detected: `vitest` (`frontend/package.json:10,25`), Vue Test Utils (`frontend/package.json:22`), jsdom (`frontend/vite.config.js:35`).
+- Direct component/module evidence:
+  - Component rendering/mounting exists: `Login.test.js:19`, `AppointmentList.test.js:48`, `UserDialogs.test.js:24`, `AppointmentCancelDialog.test.js:14`.
+  - Imports real frontend views/components/modules: e.g., `Login.test.js:5`, `ReconciliationImport.test.js:6`, `AppLayout.test.js:2`.
 - Components/modules covered (examples):
-  - views: `WaitlistView.vue`, `Login.vue`, `AppointmentCreate.vue`, `AppointmentList.vue`, `PaymentPost.vue`, `ReportsView.vue`, `FeeRulesView.vue`, `ReconciliationExceptions.vue`
+  - views: `Login.vue`, `AppointmentList.vue`, `AppointmentCreate.vue`, `WaitlistView.vue`, `FeeRulesView.vue`, `ReportsView.vue`, `LedgerView.vue`, `ReconciliationImport.vue`, `ReconciliationExceptions.vue`, `RecycleBinView.vue`, `UserManagement.vue`, `AnomalyAlerts.vue`, `PaymentPost.vue`
   - components: `UserCreateDialog.vue`, `UserResetPasswordDialog.vue`, `AppointmentCancelDialog.vue`
-  - stores/utils/router/composables: `stores/auth`, `utils/logger`, `utils/maskPayload`, `router/index.js`, `composables/useNavSections`
-- Important frontend components/modules NOT tested (direct evidence absent):
-  - views: `AnomalyAlerts.vue`, `AppointmentVersions.vue`, `AuditLogs.vue`, `ContentModeration.vue`, `FeeAssessmentList.vue`, `ForbiddenView.vue`, `LedgerView.vue`, `ReconciliationImport.vue`, `RecycleBinView.vue`, `UserManagement.vue`
-  - components: `AppointmentRescheduleDialog.vue`, `ConflictAlert.vue`, `AppLayout.vue` (only nav-section composable tested)
+  - logic modules: `stores/auth.js`, `router/index.js`, `composables/useNavSections.js`, utils (`logger.js`, `maskPayload.js`, `validateIdentifier.js`)
+- Important frontend components/modules not tested:
+  - views: `FeeAssessmentList.vue`, `ForbiddenView.vue`, `ContentModeration.vue`, `AuditLogs.vue`, `AppointmentVersions.vue`
+  - components: `AppointmentRescheduleDialog.vue`, `ConflictAlert.vue`, `AppLayout.vue` (only composable tested; component-level mount not found)
+  - services lacking direct unit tests: `auditService.js` (and most service modules are mocked in view tests)
 
 **Frontend unit tests: PRESENT**
 
 ### Cross-Layer Observation
-- Testing is backend-heavy but not frontend-empty.
-- Frontend has unit coverage, but coverage concentration is uneven: many high-impact admin/reporting/reconciliation views remain untested directly.
+- Backend API coverage is exhaustive and stronger at route-level determinism.
+- Frontend unit test presence is good, but many tests are mock-heavy and not FE↔BE integration-grade.
+- Balance status: acceptable for fullstack due existing E2E suite, but backend route-level confidence remains materially stronger than frontend realism.
 
 ## API Observability Check
-- Strong in most Laravel feature tests: method/path, request payload, and response assertions are explicit (e.g., `assertStatus`, `assertJsonStructure`, `assertJson`).
-- Weak in some E2E UI tests where API effects are inferred through UI state only, without direct response-content assertions.
+
+- **Strong** in many backend feature tests: method/path, payload, and response assertions are explicit (e.g., `AppointmentCrudTest.php`, `RefundOrderTest.php`, `ReportTest.php`).
+- **Weak pockets**:
+  - auth/unauthorized checks that only assert status (e.g., `ResourceTest.php:35`, `PaymentListTest.php:67`) provide low response-shape observability.
+  - UI-only E2E route tests validate navigation outcomes but do not explicitly assert request/response payloads for each backend endpoint.
 
 ## Tests Check
-- Success/failure coverage is broad (auth failures, role denials, invalid payloads, cross-site restrictions).
-- Edge/validation coverage is present in multiple domains (pagination limits, duplicate references, invalid transitions).
-- Integration boundaries are exercised through feature tests and E2E.
-- `run_tests.sh` is **partially non-compliant** with strict Docker-only requirement:
-  - Docker used for backend tests (`docker compose exec ... php artisan test`).
-  - Local runtime dependency/install path exists for E2E (`npm ci`, `npx playwright install chromium`) at `run_tests.sh:51-60`.
 
-## Test Coverage Score (0-100)
-**83/100**
+- `repo/run_tests.sh` includes Dockerized backend test execution (`run_tests.sh:25`) — good.
+- `repo/run_tests.sh` requires host `npm` and performs runtime installs (`npm install`, `npm ci`, `npx playwright install chromium`) at `run_tests.sh:37,68,74` — **flagged** as local dependency/runtime-install coupling.
+
+## End-to-End Expectations (fullstack)
+
+- Real FE↔BE E2E tests are present (`repo/e2e/tests/*.spec.ts`) and include live API calls plus UI assertions.
+- Partial compensation status: strong API + unit + E2E mix exists; however, one E2E auth-expiry scenario mocks `/api/auth/me` (`01-auth.spec.ts:47-52`) and should not be counted as backend route coverage.
+
+## Test Coverage Score (0–100)
+
+**Score: 88/100**
 
 ## Score Rationale
-- High endpoint coverage and broad role/validation scenarios keep score elevated.
-- Deduction for 3 uncovered endpoints, mock usage in parts of API-path tests, and uneven frontend unit distribution across critical views.
-- Deduction for non-Docker local dependency path in standard test runner script.
+
+- + Full endpoint inventory is exercised via HTTP; true no-mock route coverage reaches all 55 endpoints.
+- + Extensive backend feature suites cover success/failure/authorization paths across domains.
+- + Frontend unit tests are present and substantive, with component mounting and router/store logic coverage.
+- - Mock-heavy slices exist (backend logging tests and frontend view tests), reducing realism for some behavior.
+- - `run_tests.sh` depends on host-side npm/runtime installs, weakening deterministic container-only test reproducibility.
+- - Some frontend critical views/modules remain untested at unit/component level.
 
 ## Key Gaps
-1. No direct tests for `DELETE /api/admin/recycle-bin/bulk`.
-2. No direct tests for `GET /api/fees`.
-3. No direct tests for `GET /api/reconciliation/exceptions`.
-4. Import-path tests include mocked logging/storage in key files (`LoggingTest`, `ReconciliationTest`).
-5. Frontend missing direct unit coverage for multiple high-impact operational views.
+
+1. Host dependency in test pipeline (`npm install`, `npm ci`, Playwright browser install) violates strict container-first reproducibility.
+2. Several important frontend routes/views are untested (`AuditLogs.vue`, `AppointmentVersions.vue`, `FeeAssessmentList.vue`, `ForbiddenView.vue`, `ContentModeration.vue`).
+3. Mocked logging facade tests are valid for logging behavior but are not pure no-mock execution-path assurance.
 
 ## Confidence & Assumptions
-- Confidence: **high** for route inventory and major coverage conclusions.
-- Assumption: Laravel route base `/api` is active via `routes/api.php` conventions.
-- Static-only limitation: no runtime execution, so unreachable/conditional route behavior is not validated dynamically.
+
+- Confidence: **high** for endpoint inventory and coverage mapping from static route + test-call evidence.
+- Confidence: **medium-high** for “true no-mock” classification; based on visible test code and absence of service/controller stubbing outside identified cases.
+- Assumptions:
+  - Route set audited from `repo/backend/routes/api.php` only (API scope).
+  - Parameterized routes normalized as `{id}` / `{type}` / `{user}` per strict rule.
+  - UI-driven E2E network calls are not counted as exact endpoint coverage unless explicit API request evidence is visible.
 
 ---
 
 # README Audit
 
 ## README Location
-- Present at `repo/README.md`.
+- Found required file at `repo/README.md`.
 
-## Hard Gate Failures
-1. **Startup instruction gate (Backend/Fullstack) FAIL**
-   - Required literal command: `docker-compose up`
-   - README uses `docker compose up --build -d` at `repo/README.md:38`.
-2. **Verification method gate FAIL**
-   - README does not provide explicit verification flow (no concrete curl/Postman request list and no deterministic UI walkthrough to confirm end-to-end correctness).
-3. **Environment rules gate FAIL (strict Docker-contained policy)**
-   - README’s prescribed test entrypoint (`./run_tests.sh`, `repo/README.md:64-67`) invokes local installs/runtime dependencies for E2E (`run_tests.sh:51-60`, `run_tests.sh:62`).
+## Hard Gate Evaluation
+
+### Formatting
+- PASS: structure is readable and organized (`repo/README.md:1-120`).
+
+### Startup Instructions (Backend/Fullstack)
+- PASS: includes `docker-compose up` form (`repo/README.md:40`).
+
+### Access Method
+- PASS: URL + port provided for frontend and backend (`repo/README.md:52-55`).
+
+### Verification Method
+- PASS: provides API curl health check and authenticated endpoint check + minimal UI walkthrough (`repo/README.md:89-106`).
+
+### Environment Rules (STRICT)
+- **FAIL (Hard Gate)**:
+  - README explicitly states host npm/Node requirement for frontend unit + E2E (`repo/README.md:109`).
+  - Testing flow allows runtime dependency installation behavior (`repo/README.md:109` references auto-install via script).
+  - This violates rule: no runtime installs / no non-container dependency requirement.
+
+### Demo Credentials (Conditional Auth)
+- PASS: credentials for all roles are present (`repo/README.md:79-84`).
+
+## Engineering Quality
+
+- Tech stack clarity: good (`repo/README.md:7-13`).
+- Architecture explanation: basic but acceptable (high-level only; lacks deep module/data-flow details).
+- Testing instructions: operationally clear but policy-noncompliant due host npm dependency.
+- Security/roles: role credentials are documented; role behavior is mentioned.
+- Workflow clarity: startup/stop/verify workflow is clear.
+- Presentation quality: coherent and usable.
 
 ## High Priority Issues
-- Missing canonical project-type declaration token at top (`backend/fullstack/web/android/ios/desktop`) despite fullstack content; this weakens strict parser compatibility.
-- Verification section is insufficiently actionable for strict acceptance criteria.
-- Startup wording does not include required `docker-compose up` literal.
+
+1. Hard-gate environment noncompliance: README requires host npm/Node and allows runtime installs (`repo/README.md:109`).
 
 ## Medium Priority Issues
-- API base URL inconsistency risk: README references backend API at `http://localhost:8000/api` (`repo/README.md:50`) while E2E helper targets `http://localhost:80/api` (`repo/e2e/helpers/api.ts:3`).
-- Testing section delegates to script behavior instead of documenting exact containerized test pathways and expected artifacts.
+
+1. Verification health-check expected output example is simplified (`{"status":"ok"}`) and does not reflect full response envelope shown by backend route structure (`repo/backend/routes/api.php:25-39`).
+2. Architecture section is high-level and omits concrete service boundaries/data flow for operational onboarding.
 
 ## Low Priority Issues
-- Architecture section is concise but does not explain module boundaries/flow in detail.
-- No explicit security model narrative beyond role credentials table.
 
-## Engineering Quality Review
-- Tech stack clarity: **good**.
-- Architecture explanation: **basic**.
-- Testing instructions: **present but strict-gate non-compliant**.
-- Security/roles documentation: **partially present** (seed credentials by role provided).
-- Workflow/presentation quality: **readable markdown**, coherent structure.
+1. Testing section does not clearly separate containerized vs host-required test layers despite strict environment constraints.
+
+## Hard Gate Failures
+
+- Environment Rules (STRICT): **FAILED**
 
 ## README Verdict
+
 **FAIL**
 
-Primary reason: one or more hard gates failed (startup command literal, verification method specificity, strict Docker-contained environment rule).
+---
+
+## Final Verdicts
+
+- **Test Coverage Audit Verdict:** PASS WITH RISKS (high endpoint coverage; realism and reproducibility gaps remain).
+- **README Audit Verdict:** FAIL (hard-gate environment rule violation).
