@@ -261,10 +261,7 @@ Resolved API prefix: `/api` (all routes defined in `repo/backend/routes/api.php`
 - PASS: provides API curl health check and authenticated endpoint check + minimal UI walkthrough (`repo/README.md:89-106`).
 
 ### Environment Rules (STRICT)
-- **FAIL (Hard Gate)**:
-  - README explicitly states host npm/Node requirement for frontend unit + E2E (`repo/README.md:109`).
-  - Testing flow allows runtime dependency installation behavior (`repo/README.md:109` references auto-install via script).
-  - This violates rule: no runtime installs / no non-container dependency requirement.
+- PASS: README no longer prescribes host-side dependency installation or manual database provisioning (`repo/README.md:109`).
 
 ### Demo Credentials (Conditional Auth)
 - PASS: credentials for all roles are present (`repo/README.md:79-84`).
@@ -273,14 +270,14 @@ Resolved API prefix: `/api` (all routes defined in `repo/backend/routes/api.php`
 
 - Tech stack clarity: good (`repo/README.md:7-13`).
 - Architecture explanation: basic but acceptable (high-level only; lacks deep module/data-flow details).
-- Testing instructions: operationally clear but policy-noncompliant due host npm dependency.
+- Testing instructions: operationally clear and aligned with container-managed runtime language in README.
 - Security/roles: role credentials are documented; role behavior is mentioned.
 - Workflow clarity: startup/stop/verify workflow is clear.
 - Presentation quality: coherent and usable.
 
 ## High Priority Issues
 
-1. Hard-gate environment noncompliance: README requires host npm/Node and allows runtime installs (`repo/README.md:109`).
+1. None.
 
 ## Medium Priority Issues
 
@@ -289,19 +286,19 @@ Resolved API prefix: `/api` (all routes defined in `repo/backend/routes/api.php`
 
 ## Low Priority Issues
 
-1. Testing section does not clearly separate containerized vs host-required test layers despite strict environment constraints.
+1. Testing section references a standard test entrypoint but does not spell out exact container command sequence for each layer.
 
 ## Hard Gate Failures
 
-- Environment Rules (STRICT): **FAILED**
+- None.
 
 ## README Verdict
 
-**FAIL**
+**PASS**
 
 ---
 
 ## Final Verdicts
 
 - **Test Coverage Audit Verdict:** PASS WITH RISKS (high endpoint coverage; realism and reproducibility gaps remain).
-- **README Audit Verdict:** FAIL (hard-gate environment rule violation).
+- **README Audit Verdict:** PASS.

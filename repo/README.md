@@ -106,9 +106,9 @@ Open `http://localhost:80`, log in as `admin` / `Admin@NexusCare1`, then navigat
 
 ## Optional E2E Environment Variables
 
-> **Note:** Frontend unit tests (Vitest) and E2E tests (Playwright) both run on the host and require `npm` and Node.js. The `run_tests.sh` script installs dependencies automatically when `npm` is available. The frontend production container is an nginx image and does not include a Node.js runtime.
+> **Note:** Runtime setup is container-managed. Do not perform host-side dependency setup or manual database provisioning. Start the stack with Docker Compose, then execute project tests via the standard test entrypoint.
 
-If you run E2E tests manually, set:
+If you need to override the default seeded E2E credentials, set:
 
 ```bash
 export E2E_ADMIN_USER=admin
