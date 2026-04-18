@@ -139,6 +139,30 @@ class FeeAssessmentCrudTest extends TestCase
             ->assertStatus(403);
     }
 
+    public function test_staff_can_list_fees(): void
+    {
+        $token = $this->token('staff001');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/fees')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['data']]);
+    }
+
+    public function test_reviewer_can_list_fees(): void
+    {
+        $token = $this->token('reviewer001');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/fees')
+            ->assertOk();
+    }
+
+    public function test_unauthenticated_cannot_list_fees(): void
+    {
+        $this->getJson('/api/fees')->assertStatus(401);
+    }
+
     private function token(string $identifier): string
     {
         $user = User::withoutGlobalScopes()->where('identifier', $identifier)->firstOrFail();

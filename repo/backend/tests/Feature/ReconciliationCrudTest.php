@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AnomalyAlert;
+use App\Models\ReconciliationException;
 use App\Models\SettlementImport;
 use App\Models\User;
 use App\Models\UserSession;
@@ -17,6 +18,7 @@ class ReconciliationCrudTest extends TestCase
     use RefreshDatabase;
 
     private int $anomalyId;
+    private int $importId;
 
     protected function setUp(): void
     {
@@ -47,6 +49,17 @@ class ReconciliationCrudTest extends TestCase
         ]);
 
         $this->anomalyId = (int) $alert->id;
+        $this->importId = (int) $import->id;
+
+        ReconciliationException::withoutGlobalScopes()->create([
+            'import_id' => $import->id,
+            'row_data' => ['ref' => 'TEST-001'],
+            'expected_amount' => 100.00,
+            'actual_amount' => 72.50,
+            'reason' => 'amount_mismatch',
+            'status' => 'unresolved',
+            'created_at' => now(),
+        ]);
     }
 
     public function test_reviewer_can_list_imports(): void
@@ -131,6 +144,30 @@ class ReconciliationCrudTest extends TestCase
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->patchJson('/api/reconciliation/anomalies/999999/acknowledge')
             ->assertStatus(404);
+    }
+
+    public function test_reviewer_can_list_exceptions(): void
+    {
+        $token = $this->token('reviewer001');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/reconciliation/exceptions')
+            ->assertOk()
+            ->assertJsonStructure(['data']);
+    }
+
+    public function test_staff_cannot_list_exceptions(): void
+    {
+        $token = $this->token('staff001');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/reconciliation/exceptions')
+            ->assertStatus(403);
+    }
+
+    public function test_unauthenticated_cannot_list_exceptions(): void
+    {
+        $this->getJson('/api/reconciliation/exceptions')->assertStatus(401);
     }
 
     private function token(string $identifier): string

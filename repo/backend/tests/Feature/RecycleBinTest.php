@@ -173,6 +173,51 @@ class RecycleBinTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_admin_can_bulk_delete_from_recycle_bin(): void
+    {
+        $token = $this->token('admin001');
+        $userOne = User::withoutGlobalScopes()->where('identifier', 'staff002')->firstOrFail();
+        $userTwo = User::withoutGlobalScopes()->where('identifier', 'reviewer001')->firstOrFail();
+
+        $userOne->delete();
+        $userTwo->delete();
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->deleteJson('/api/admin/recycle-bin/bulk', [
+                'items' => [
+                    ['entity_type' => 'user', 'entity_id' => $userOne->id],
+                    ['entity_type' => 'user', 'entity_id' => $userTwo->id],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertNull(User::withoutGlobalScopes()->withTrashed()->find($userOne->id));
+        $this->assertNull(User::withoutGlobalScopes()->withTrashed()->find($userTwo->id));
+    }
+
+    public function test_staff_cannot_bulk_delete(): void
+    {
+        $token = $this->token('staff001');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->deleteJson('/api/admin/recycle-bin/bulk', [
+                'items' => [
+                    ['entity_type' => 'user', 'entity_id' => 1],
+                ],
+            ])
+            ->assertStatus(403);
+    }
+
+    public function test_bulk_delete_empty_items_returns_422(): void
+    {
+        $token = $this->token('admin001');
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->deleteJson('/api/admin/recycle-bin/bulk', ['items' => []])
+            ->assertStatus(422);
+    }
+
     private function token(string $identifier): string
     {
         User::withoutGlobalScopes()->where('identifier', $identifier)->update([

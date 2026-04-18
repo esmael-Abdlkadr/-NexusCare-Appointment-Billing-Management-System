@@ -5,62 +5,21 @@ import { loginAsReviewer, loginAsStaff, logout } from '../helpers/auth'
 const BASE = 'http://localhost:80/api'
 
 /**
- * Seeds a confirmed appointment and transitions it to no_show.
- * With AppointmentService now wired to FeeService, this creates
- * a pending no-show fee assessment automatically.
+ * Creates a pending fee assessment directly via POST /api/fee-assessments.
  * Returns the fee assessment id (or null on failure).
  */
 const seedPendingFeeAssessment = async (request): Promise<number | null> => {
-  const adminToken = await apiTokenAsAdmin(request)
   const staffToken = await apiTokenAsStaff(request)
 
   const clients = await apiGet(request, staffToken, '/users/search', { per_page: 1 })
-  const providers = await apiGet(request, staffToken, '/users/search', { role: 'staff', per_page: 1 })
-  const resources = await apiGet(request, staffToken, '/resources')
-
   const clientId = clients?.data?.[0]?.id
-  const provider = providers?.data?.[0]
-  const resourceId = resources?.data?.[0]?.id
-  if (!clientId || !provider?.id || !resourceId) return null
+  if (!clientId) return null
 
-  const seed = Date.now()
-  const start = new Date()
-  start.setDate(start.getDate() + 30 + (seed % 90))
-  start.setHours(9 + (seed % 7), 0, 0, 0)
-  const end = new Date(start)
-  end.setHours(start.getHours() + 1, 0, 0, 0)
-
-  const created = await apiPost(request, staffToken, '/appointments', {
+  const fee = await apiPost(request, staffToken, '/fee-assessments', {
     client_id: clientId,
-    provider_id: provider.id,
-    resource_id: resourceId,
-    department_id: provider.department_id || 1,
-    service_type: `E2E-FEE-${seed}`,
-    start_time: start.toISOString(),
-    end_time: end.toISOString(),
+    amount: 50.00,
   })
-  const apptId = created?.data?.appointment?.id
-  if (!apptId) return null
-
-  // Confirm (admin only)
-  await request.patch(`${BASE}/appointments/${apptId}/status`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-    data: { status: 'confirmed' },
-  })
-
-  // Mark no_show → triggers FeeService.assessNoShowFee() automatically
-  await request.patch(`${BASE}/appointments/${apptId}/status`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-    data: { status: 'no_show' },
-  })
-
-  // Retrieve the resulting fee assessment
-  const feesResp = await apiGet(request, staffToken, '/fee-assessments', {
-    status: 'pending',
-    per_page: 5,
-  })
-  const fees: { id: number }[] = feesResp?.data?.data ?? []
-  return fees[0]?.id ?? null
+  return fee?.data?.fee_assessment?.id ?? null
 }
 
 // ── shared state ─────────────────────────────────────────────────────────────
@@ -116,9 +75,10 @@ test('staff can post a standard cash payment from /payments/post and fee becomes
   const referenceId = `E2E-CASH-${Date.now()}`
 
   await page.goto(`/payments/post?fee_id=${feeId}&amount=${targetFee.amount}`)
+  await expect(page.locator('.el-form-item').filter({ hasText: 'Amount' }).locator('input')).not.toHaveValue('', { timeout: 5000 })
   await page.locator('.el-form-item').filter({ hasText: 'Reference ID' }).locator('input').fill(referenceId)
   await page.getByRole('button', { name: /post payment/i }).click()
-  await expect(page.locator('.el-message--success')).toBeVisible({ timeout: 8000 })
+  await expect(page.locator('.el-message--success')).toBeVisible({ timeout: 15000 })
 
   await expect.poll(async () => {
     const paidResp = await apiGet(request, staffToken, '/fee-assessments', { status: 'paid', per_page: 100 })

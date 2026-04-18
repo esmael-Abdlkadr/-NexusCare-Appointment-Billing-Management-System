@@ -38,5 +38,3 @@ mysql_data/
 .vscode/
 *.swp
 
-# Test reports
-repo/.tmp/

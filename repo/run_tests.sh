@@ -29,7 +29,22 @@ echo ""
 # Ensure runtime app user can always write logs/cache before E2E.
 docker compose exec -T backend sh -lc "chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache"
 
-echo "=== 2. E2E Tests (Playwright) ==="
+echo "=== 2. Frontend Unit Tests ==="
+if command -v npm &> /dev/null; then
+    cd "$SCRIPT_DIR/frontend"
+    if [ ! -d "node_modules" ]; then
+        echo "Frontend dependencies not found; installing with npm install..."
+        npm install
+    fi
+    npm test
+    cd "$SCRIPT_DIR"
+    echo "Frontend unit tests: PASSED"
+else
+    echo "Frontend unit tests: SKIPPED (npm unavailable)"
+fi
+echo ""
+
+echo "=== 3. E2E Tests (Playwright) ==="
 E2E_RAN=false
 if [ -d "$SCRIPT_DIR/e2e" ] && command -v npm &> /dev/null; then
     cd "$SCRIPT_DIR/e2e"
@@ -82,9 +97,9 @@ echo ""
 
 echo "============================================"
 if [ "$E2E_RAN" = "true" ]; then
-    echo " All tests passed! (unit + api + e2e)"
+    echo " All tests passed! (backend + frontend + e2e)"
 else
-    echo " Partial run complete (unit + api only)."
+    echo " Partial run complete (backend + frontend only)."
     echo " E2E was skipped with --allow-skip-e2e."
 fi
 echo "============================================"

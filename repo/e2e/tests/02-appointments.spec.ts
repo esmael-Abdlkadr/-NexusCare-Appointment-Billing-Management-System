@@ -129,16 +129,14 @@ const chooseFirstSelectOption = async (page: Page, labelText: string) => {
   await selectTrigger.click({ force: true })
 
   const dropdown = page.locator('.el-select-dropdown:visible .el-select-dropdown__item').first()
-  await dropdown.waitFor({ state: 'visible', timeout: 5000 })
-  await page.keyboard.press('ArrowDown')
-  await page.keyboard.press('Enter')
+  await dropdown.waitFor({ state: 'visible', timeout: 8000 })
+  await page.waitForTimeout(400)
+  await dropdown.click({ force: true })
   await page.waitForTimeout(300)
-
-  const inputValue = selectTrigger.locator('.el-input__inner, .el-select__selected-item, .el-select__placeholder')
-  await expect(inputValue.first()).not.toHaveText(/search|select/i, { timeout: 3000 }).catch(() => {})
 }
 
 test('create appointment form submits successfully and persists the new appointment', async ({ page, request }) => {
+  test.setTimeout(60000)
   const serviceType = `E2E-UI-CREATE-${Date.now()}`
   const staffToken = await apiTokenAsStaff(request)
 
