@@ -21,6 +21,24 @@ fi
 echo "============================================"
 echo ""
 
+echo "=== 0. Ensuring Docker stack is running ==="
+docker compose up -d
+echo "Waiting for backend to be ready..."
+MAX_WAIT=120
+WAITED=0
+until docker compose exec -T backend php artisan --version > /dev/null 2>&1; do
+    if [ "$WAITED" -ge "$MAX_WAIT" ]; then
+        echo "ERROR: Backend did not become ready within ${MAX_WAIT}s"
+        exit 1
+    fi
+    sleep 3
+    WAITED=$((WAITED + 3))
+done
+# Extra wait for migrations/seeding to finish after artisan is available
+sleep 10
+echo "Docker stack is ready."
+echo ""
+
 echo "=== 1. Backend Unit + Feature Tests ==="
 docker compose exec -T -u www-data backend php artisan test --stop-on-failure
 echo "Backend tests: PASSED"
